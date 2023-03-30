@@ -1,6 +1,6 @@
 ---
 title: How to set up Unity on VScode
-date: 2023-03-30 20:00:00 -800
+date: 2023-03-29 20:00:00 -800
 categories: [Unity]
 tags: [unity, setup, C#]    # TAG names should always be lowercase
 ---
