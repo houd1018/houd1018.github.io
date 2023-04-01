@@ -134,3 +134,65 @@ Color32.Color32(byte r, byte g, byte b, byte a)
 }
 ```
 
+## Sprite Shape
+
+collider -> offset -> make object closer to the sprite shape
+
+height -> make the surrounding sprite higher
+
+## Cinemathine [unity package]
+
+- mange multiple cameras
+- create rules for our cameras
+
+**follow Camera**: Follow -> game object
+
+Body -> Screen X/Y -> adjust the position of the camera -> show more what's to come 
+
+## Location
+
+The position of children is **relative** to the parents
+
+## Surface Effector 2D
+
+applies tangent forces along the surfaces of **colliders**
+
+[Unity Doc: Surface Effector 2D](https://docs.unity3d.com/Manual/class-SurfaceEffector2D.html) 
+
+not gonna stucked
+
+![continous_collision](/assets/pic/continous_collision)  
+
+## AddTorque()
+
+```c#
+public class PlayerController : MonoBehaviour
+{
+    Rigidbody2D rb2d;
+    [SerializeField] float torqueAmout = 1f;
+    // Start is called before the first frame update
+    void Start()
+    {
+        rb2d = GetComponent<Rigidbody2D>();
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        if(Input.GetKey(KeyCode.LeftArrow)){
+            rb2d.AddTorque(torqueAmout);
+        }
+    }
+}
+```
+
+## SceneManagenment
+
+```c#
+    private void OnTriggerEnter2D(Collider2D other) {
+        if(other.tag == "Player"){
+            SceneManager.LoadScene(0);
+        }
+    }
+```
+
