@@ -161,7 +161,7 @@ applies tangent forces along the surfaces of **colliders**
 
 not gonna stucked
 
-![continous_collision](/assets/pic/continous_collision)  
+![continous_collision](/assets/pic/continous_collision.png)  
 
 ## AddTorque()
 
