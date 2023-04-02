@@ -196,3 +196,16 @@ public class PlayerController : MonoBehaviour
     }
 ```
 
+## Invoke()
+
+```c#
+//Invokes the method methodName in time seconds.
+private void OnTriggerEnter2D(Collider2D other) {
+    if(other.tag == "Player"){
+        Invoke("Reload", reloadTime);
+    }
+}
+void Reload(){
+    SceneManager.LoadScene(0);
+}
+```
