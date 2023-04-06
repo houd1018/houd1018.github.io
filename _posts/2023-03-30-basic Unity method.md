@@ -36,6 +36,7 @@ void Transform.Translate(float x, float y, float z) (+ 5 多个重载)
 ```c#
 //Force Unity to serialize a private field. -> access in the inspector
 // the value in inspector overide the script
+// difference between "public": can be inspected in the unity and be private at the same time
 [SerializeField] float moveSpeed = 0.01f;
 ```
 
@@ -58,6 +59,7 @@ void Transform.Translate(float x, float y, float z) (+ 5 多个重载)
 ## Rigid Body and Collider
 
 ![deltaTime](/assets/pic/rigid_collider.png)
+[Rigidbody.interpolation](https://docs.unity3d.com/ScriptReference/Rigidbody-interpolation.html)
 
 ## OnCollisionEnter2D & OnTrigger
 
@@ -209,3 +211,35 @@ void Reload(){
     SceneManager.LoadScene(0);
 }
 ```
+
+## ParticleSystem
+
+````c#
+    [SerializeField] ParticleSystem finishEffect;
+    private void OnTriggerEnter2D(Collider2D other) {
+        if(other.tag == "Player"){
+            finishEffect.Play();
+            Invoke("Reload", reloadTime);
+        }
+    }
+````
+Uncheck "Play on awake"
+![playonawake](/assets/pic/playonawake.png)
+
+## FindObjectOfType
+
+````c#
+    void Start()
+    {
+        rb2d = GetComponent<Rigidbody2D>();
+        surfaceEffector2D = FindObjectOfType<SurfaceEffector2D>();
+    }
+// (automatically) The first active loaded object that matches the specified type.
+````
+
+## Audio
+
+[audio listener](https://docs.unity3d.com/Manual/class-AudioListener.html)
+
+[audio speaker](https://docs.unity3d.com/Manual/class-AudioSource.html)
+
