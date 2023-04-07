@@ -39,6 +39,18 @@ void Transform.Translate(float x, float y, float z) (+ 5 多个重载)
 // difference between "public": can be inspected in the unity and be private at the same time
 [SerializeField] float moveSpeed = 0.01f;
 ```
+### Header
+```c#
+    [Header("Questions")]
+    [SerializeField] TextMeshProUGUI questionText;
+    [SerializeField] QuestionSO question;
+
+    [Header("answers")]
+    [SerializeField] GameObject[] ansButtons;
+    int correctAnsIdx;
+    [SerializeField] Sprite CorrectSprite;
+    [SerializeField] Sprite DefaultSprite;
+```
 
 ## Input.GetAxis()
 
