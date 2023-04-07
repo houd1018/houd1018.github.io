@@ -1,5 +1,5 @@
 ---
-title: basic Unity method
+title: basic Unity2D method
 date: 2023-03-30 20:00:00 -800
 categories: [Unity]
 tags: [unity, C#]    # TAG names should always be lowercase
@@ -242,4 +242,44 @@ Uncheck "Play on awake"
 [audio listener](https://docs.unity3d.com/Manual/class-AudioListener.html)
 
 [audio speaker](https://docs.unity3d.com/Manual/class-AudioSource.html)
+
+## UI Canvas
+[Canvas](https://docs.unity3d.com/Packages/com.unity.ugui@1.0/manual/UICanvas.html)
+### Background
+![RecTrans](/assets/pic/RectTrans.png)
+### TextMashPRO
+[TextMeshPro](https://docs.unity3d.com/Manual/com.unity.textmeshpro.html)
+![textMeshPro](/assets/pic/textMeshPro.png)
+For more fonts: https://www.dafont.com/
+### Button layout
+![buttonLayout](/assets/pic/buttonLayout.png)
+### Get child component
+```c#
+    void Start()
+    {
+        questionText.text = question.GetQuestion();
+
+        for (int i = 0; i < ansButtons.Length; i++)
+        {
+            TextMeshProUGUI buttonText = ansButtons[i].GetComponentInChildren<TextMeshProUGUI>();
+            buttonText.text = question.GetAns(i);
+        }
+    }
+```
+### Image type: Filled -> make the image change
+![filled](/assets/pic/filled.png)
+
+## Scriptable Objects
+````c#
+[CreateAssetMenu(menuName = "Quiz Question", fileName = "New Question")]
+public class QuestionSO : ScriptableObject
+{
+    [TextArea(2, 6)]
+    [SerializeField] string question = "Enter new question text here";
+}
+````
+![scriptable](/assets/pic/scriptable.png)
+
+## Lock the Inspector
+https://docs.unity3d.com/Manual/InspectorOptions.html
 
