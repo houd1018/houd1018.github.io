@@ -1,0 +1,16 @@
+---
+title: How to set up Unity on VScode
+date: 2023-04-06 20:00:00 -800
+categories: [Unity]
+tags: [unity, setup, vcs]    # TAG names should always be lowercase
+---
+
+# How to set up Unity on VScode
+Each time you have a set of changes ready to share with your team, you’ll be going through the following process to stage and commit them in git:
+
+- **Stage** the changes to `commit - git add <FILES TO ADD>`
+- **Check** that the changes are valid and complete, with no missing meta files, duplicate GUIDs etc.
+- **Commit** the change - `git commit -m "<YOUR MESSAGE>"`
+- **Push** the changes to GitHub - `git push`
+
+More info on : [How to set up a Unity project in GitHub](https://unityatscale.com/unity-version-control-guide/how-to-setup-unity-project-on-github/)
