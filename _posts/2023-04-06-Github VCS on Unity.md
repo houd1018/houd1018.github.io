@@ -1,11 +1,11 @@
 ---
-title: How to set up Unity on VScode
+title: Github VCS on Unity
 date: 2023-04-06 20:00:00 -800
 categories: [Unity]
 tags: [unity, setup, vcs]    # TAG names should always be lowercase
 ---
 
-# How to set up Unity on VScode
+# Github VCS on Unity
 Each time you have a set of changes ready to share with your team, you’ll be going through the following process to stage and commit them in git:
 
 - **Stage** the changes to `commit - git add <FILES TO ADD>`
