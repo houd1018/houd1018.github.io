@@ -281,6 +281,9 @@ For more fonts: https://www.dafont.com/
 ### Image type: Filled -> make the image change
 ![filled](/assets/pic/filled.png)
 
+### slider
+[Unity Doc Slider](https://docs.unity3d.com/2018.3/Documentation/ScriptReference/UI.Slider.html)
+
 ## Scriptable Objects
 ````c#
 [CreateAssetMenu(menuName = "Quiz Question", fileName = "New Question")]
@@ -295,3 +298,37 @@ public class QuestionSO : ScriptableObject
 ## Lock the Inspector
 https://docs.unity3d.com/Manual/InspectorOptions.html
 
+## GameManager
+```c#
+    Quiz quiz;
+    EndScreen endScreen;
+
+    void Awake()
+    {
+        quiz = FindObjectOfType<Quiz>();
+        endScreen = FindObjectOfType<EndScreen>();
+    }
+
+    void Start()
+    {
+        quiz.gameObject.SetActive(true);
+        endScreen.gameObject.SetActive(false);
+    }
+
+    void Update()
+    {
+        if (quiz.isComplete)
+        {
+            quiz.gameObject.SetActive(false);
+            endScreen.gameObject.SetActive(true);
+            endScreen.ShowFinalScore();
+        }
+    }
+
+    public void OnReplayLevel()
+    {
+        // get the current scene again
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
+
+```
