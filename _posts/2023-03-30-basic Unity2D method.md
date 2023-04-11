@@ -332,3 +332,17 @@ https://docs.unity3d.com/Manual/InspectorOptions.html
     }
 
 ```
+
+## Sprite Sheet
+Multiple sprite fill in the area
+![100922](/assets/pic/100922.png)
+Automatic -> no space around
+
+Grid by cell size -> maintain the space around intentionally
+![101214](/assets/pic/101214.png)
+![103031](/assets/pic/103031.png)
+
+## TileMap
+![103854](/assets/pic/103854.jpg)
+[Creating a Tile Palette](https://docs.unity3d.com/Manual/Tilemap-Palette.html)
+![104520](/assets/pic/104520.png)
