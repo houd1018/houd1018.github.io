@@ -346,3 +346,37 @@ Grid by cell size -> maintain the space around intentionally
 ![103854](/assets/pic/103854.jpg)
 [Creating a Tile Palette](https://docs.unity3d.com/Manual/Tilemap-Palette.html)
 ![104520](/assets/pic/104520.png)
+
+### rule tile (assest)
+[rule tile](https://docs.unity3d.com/Packages/com.unity.2d.tilemap.extras@1.6/manual/RuleTile.html)
+![203056](/assets/pic/203056.png)
+
+## Animation
+**Terminology**
+
+- **Animator Component** - Assigns animations to GameObjects through an Animator Controller
+- **Animator Controller** - Arrangement of animations and transitions (state machine).
+- **Animation** - Specific pieces of motion
+- **Sprite Renderer** - displays the 2D sprite on screen
+
+**Set Up Your Character's Idle**
+
+- Import spritesheet and slice
+- Add sprite renderer to Player
+- Create idle animation clip
+- Create Character Animator Controller,
+- Add idle animation to Animator Controller
+- Add Animator to Player
+- Assign Character Animator Controller to Player
+
+idle -> loop check
+![idle](/assets/pic/205207.png)
+
+### transition
+![transition](/assets/pic/222318.png)
+
+## input system
+![235119](/assets/pic/235119.png)
+```
+
+```
