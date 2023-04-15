@@ -162,6 +162,10 @@ height -> make the surrounding sprite higher
 **follow Camera**: Follow -> game object
 
 Body -> Screen X/Y -> adjust the position of the camera -> show more what's to come 
+![112231](/assets/pic/112231.png)
+### Cinemachine Confiner
+![112231](/assets/pic/113909.png)
+### State-driven camera
 
 ## Location
 
@@ -296,7 +300,7 @@ public class QuestionSO : ScriptableObject
 ![scriptable](/assets/pic/scriptable.png)
 
 ## Lock the Inspector
-https://docs.unity3d.com/Manual/InspectorOptions.html
+[InspectorOptions](https://docs.unity3d.com/Manual/InspectorOptions.html)
 
 ## GameManager
 ```c#
@@ -372,11 +376,207 @@ Grid by cell size -> maintain the space around intentionally
 idle -> loop check
 ![idle](/assets/pic/205207.png)
 
+```c#
+    void Start()
+    {
+        MyRgdb = GetComponent<Rigidbody2D>();
+        MyAnimator = GetComponent<Animator>();
+        MyCapsuleCollider = GetComponent<CapsuleCollider2D>();
+    }
+
+        void run()
+    {
+        // only control the x axis
+        // maintain the original rgbd velocity
+        Vector2 playerVelocity = new Vector2(moveInput.x * runSpeed, MyRgdb.velocity.y);
+        MyRgdb.velocity = playerVelocity;
+
+        // running state check
+        bool HasHorizontalSpeed = Mathf.Abs(MyRgdb.velocity.x) > Mathf.Epsilon;
+        MyAnimator.SetBool("isRunning", HasHorizontalSpeed);
+    }
+```
+[LayerMask.GetMask](https://docs.unity3d.com/ScriptReference/LayerMask.GetMask.html)
+
+[Collider2D.IsTouchingLayers](https://docs.unity3d.com/ScriptReference/Collider2D.IsTouchingLayers.html)
 ### transition
 ![transition](/assets/pic/222318.png)
 
 ## input system
 ![235119](/assets/pic/235119.png)
+```C#
+
+using UnityEngine.InputSystem;
+
+
+    void OnMove(InputValue value)
+    {
+        // value.Get<Vector2>()!!!
+        moveInput = value.Get<Vector2>();
+        Debug.Log(moveInput);
+    }
+
+    void OnJump(InputValue value)
+    {
+        if (!MyCapsuleCollider.IsTouchingLayers(LayerMask.GetMask("Ground"))) { return; }
+        if (value.isPressed)
+        {
+            MyRgdb.velocity += new Vector2(0f, jumpSpeed);
+        }
+    }
+
+    void run()
+    {
+        // only control the x axis
+        // maintain the original rgbd velocity
+        Vector2 playerVelocity = new Vector2(moveInput.x * runSpeed, rgdb.velocity.y);
+        rgdb.velocity = playerVelocity;
+    }
+}
 ```
 
+## Filp
+```c#
+    void FlipSprite()
+    {
+        bool HasHorizontalSpeed = Mathf.Abs(rgdb.velocity.x) > Mathf.Epsilon;
+
+        // only there is speed when moving
+        if(HasHorizontalSpeed)
+        {
+            transform.localScale = new Vector2(Mathf.Sign(rgdb.velocity.x), 1f);
+            // Sign consider 0 as positive
+        }
+    }
 ```
+
+## Physic Material
+![](/assets/pic/165329.png)
+
+## [Object.Instantiate](https://docs.unity3d.com/ScriptReference/Object.Instantiate.html)
+```c#
+    void OnFire(InputValue value)
+    {
+        if (!isAlive) { return; }
+        Instantiate(bullet, gun.position, transform.rotation);
+    }
+```
+
+## Coroutine
+- Coroutines are another way for us to create a **delay** in our game.
+- The core concept to understand is that we start a process (ie. Start Coroutine) and then go off and do other things (ie. Yield) until our condition (eg. we've waited 2 seconds) is met.
+
+```c#
+    void OnTriggerEnter2D(Collider2D other) 
+    {
+        StartCoroutine(LoadNextLevel());
+    }
+    
+    IEnumerator LoadNextLevel()
+    {
+        yield return new WaitForSecondsRealtime(levelLoadDelay);
+        int currentSceneIndex = SceneManager.GetActiveScene().buildIndex;
+        int nextSceneIndex = currentSceneIndex + 1;
+
+        if (nextSceneIndex == SceneManager.sceneCountInBuildSettings)
+        {
+            nextSceneIndex = 0;
+        }
+
+        SceneManager.LoadScene(nextSceneIndex);
+    }
+```
+
+## Game Session
+
+![4820](/assets/pic/4820.jpg)
+[Object.FindObjectsOfType](https://docs.unity3d.com/ScriptReference/Object.FindObjectsOfType.html)
+```c#
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+
+public class GameSession : MonoBehaviour
+{
+    [SerializeField] int playerLives = 3;
+    
+    void Awake()
+    {
+        int numGameSessions = FindObjectsOfType<GameSession>().Length;
+        if (numGameSessions > 1)
+        {
+            Destroy(gameObject);
+        }
+        else
+        {
+            DontDestroyOnLoad(gameObject);
+        }
+    }
+
+    public void ProcessPlayerDeath()
+    {
+        if (playerLives > 1)
+        {
+            TakeLife();
+        }
+        else
+        {
+            ResetGameSession();
+        }
+    }
+
+    void TakeLife()
+    {
+        playerLives--;
+        int currentSceneIndex = SceneManager.GetActiveScene().buildIndex;
+        SceneManager.LoadScene(currentSceneIndex);
+    }
+
+    void ResetGameSession()
+    {
+        SceneManager.LoadScene(0);
+        Destroy(gameObject);
+    }
+}
+
+```
+
+## Audio
+![0026](/assets/pic/002603.png)
+```c#
+[SerializeField] AudioClip coinPickupSFX;
+    
+    void OnTriggerEnter2D(Collider2D other) 
+    {
+        if (other.tag == "Player")
+        {
+            AudioSource.PlayClipAtPoint(coinPickupSFX, Camera.main.transform.position);
+            Destroy(gameObject);
+        }
+    }
+```
+
+## Scene Persist
+Put persistant stuff as `Scene Persist`'s children
+```c#
+   void Awake()
+    {
+        int numScenePersists = FindObjectsOfType<ScenePersist>().Length;
+        if (numScenePersists > 1)
+        {
+            Destroy(gameObject);
+        }
+        else
+        {
+            DontDestroyOnLoad(gameObject);
+        }
+    }
+    public void ResetScenePersist()
+    {
+        Destroy(gameObject);
+    }
+
+```
+## [Prefab Variants](https://docs.unity3d.com/Manual/PrefabVariants.html)
