@@ -1,5 +1,5 @@
 ---
-title: basic Unity2D method
+title: basic Unity2D_Gameplay_method
 date: 2023-03-30 20:00:00 -800
 categories: [Unity]
 tags: [unity, C#]    # TAG names should always be lowercase
@@ -558,7 +558,7 @@ public class GameSession : MonoBehaviour
     }
 ```
 
-## Scene Persist
+## Singleton Pattern (Scene Persist)
 Put persistant stuff as `Scene Persist`'s children
 ```c#
    void Awake()
