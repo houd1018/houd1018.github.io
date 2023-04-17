@@ -402,7 +402,8 @@ idle -> loop check
 ### transition
 ![transition](/assets/pic/222318.png)
 
-## input system
+## [input system](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.0/manual/QuickStartGuide.html)
+![4412](/assets/pic/4412.jpg)
 ![235119](/assets/pic/235119.png)
 ```C#
 
@@ -580,3 +581,23 @@ Put persistant stuff as `Scene Persist`'s children
 
 ```
 ## [Prefab Variants](https://docs.unity3d.com/Manual/PrefabVariants.html)
+
+## [ViewPoint](https://www.udemy.com/course/unitycourse/learn/lecture/28711404#questions)
+![4412](/assets/pic/4742.jpg)
+```c#
+    void initBounds()
+    {
+        Camera mainCamera = Camera.main;
+        minBounds = mainCamera.ViewportToWorldPoint(new Vector2(0, 0));
+        maxBounds = mainCamera.ViewportToWorldPoint(new Vector2(1, 1));
+    }
+
+    void Move(){
+        Vector2 delta = rawInput * moveSpeed * Time.deltaTime;
+        Vector2 newPos = new Vector2();
+        newPos.x = Mathf.Clamp(transform.position.x + delta.x, minBounds.x + paddingLeft, maxBounds.x - paddingRight);
+        newPos.y = Mathf.Clamp(transform.position.y + delta.y, minBounds.y + paddingBottom, maxBounds.y - paddingTop);
+        transform.position = newPos;
+
+    }
+```
