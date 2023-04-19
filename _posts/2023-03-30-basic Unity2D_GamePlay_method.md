@@ -463,7 +463,7 @@ using UnityEngine.InputSystem;
     }
 ```
 
-## Coroutine
+## [Coroutine](https://www.youtube.com/watch?v=kUP6OK36nrM)
 - Coroutines are another way for us to create a **delay** in our game.
 - The core concept to understand is that we start a process (ie. Start Coroutine) and then go off and do other things (ie. Yield) until our condition (eg. we've waited 2 seconds) is met.
 
