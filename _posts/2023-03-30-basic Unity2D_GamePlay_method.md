@@ -456,7 +456,6 @@ using UnityEngine.InputSystem;
         Vector2 playerVelocity = new Vector2(moveInput.x * runSpeed, rgdb.velocity.y);
         rgdb.velocity = playerVelocity;
     }
-}
 ```
 
 ## Filp
