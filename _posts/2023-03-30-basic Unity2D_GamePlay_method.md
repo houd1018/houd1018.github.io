@@ -463,23 +463,8 @@ using UnityEngine.InputSystem;
     }
 ```
 
-<<<<<<< HEAD
 ## [Coroutine](https://www.youtube.com/watch?v=kUP6OK36nrM)
-=======
-### Instantiate with nesting parent
-```c#
-// the transform of parents
-    private void spawnEnemy()
-    {
-        Instantiate(currentWave.getEnemyPrefeb(0),
-                    currentWave.getStartingWaypoint().position,
-                    Quaternion.identity,
-                    transform);
-    }
-```
 
-## Coroutine
->>>>>>> 5c02e421a2694ea49b077dfc3ef8027a10412406
 - Coroutines are another way for us to create a **delay** in our game.
 - The core concept to understand is that we start a process (ie. Start Coroutine) and then go off and do other things (ie. Yield) until our condition (eg. we've waited 2 seconds) is met.
 
@@ -501,6 +486,18 @@ using UnityEngine.InputSystem;
         }
 
         SceneManager.LoadScene(nextSceneIndex);
+    }
+```
+
+### Instantiate with nesting parent
+```c#
+// the transform of parents
+    private void spawnEnemy()
+    {
+        Instantiate(currentWave.getEnemyPrefeb(0),
+                    currentWave.getStartingWaypoint().position,
+                    Quaternion.identity,
+                    transform);
     }
 ```
 
