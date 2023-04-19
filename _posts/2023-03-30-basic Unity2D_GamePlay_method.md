@@ -284,6 +284,8 @@ Uncheck "Play on awake"
 
 [AudioSource](https://docs.unity3d.com/ScriptReference/AudioSource.html)
 
+![1843](/assets/pic/IMG_3483.JPG)
+
 ```c#
     void playClip(AudioClip audioClip, float Volum)
     {
