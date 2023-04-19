@@ -51,6 +51,19 @@ void Transform.Translate(float x, float y, float z) (+ 5 多个重载)
     [SerializeField] Sprite CorrectSprite;
     [SerializeField] Sprite DefaultSprite;
 ```
+```c#
+    [Header("General")]
+    [SerializeField] GameObject projectilePrefab;
+    [SerializeField] float projectileSpeed = 10f;
+    [SerializeField] float projectileLifetime = 5f;
+    [SerializeField] float baseFiringRate = 0.2f;
+
+    [Header("AI")]
+    [SerializeField] bool isAI;
+    [SerializeField] float firingRateVariance = 0f;
+    [SerializeField] float minimumFiringRate = 0.1f;
+    [HideInInspector] public bool isFiring;
+```
 
 ## Input.GetAxis()
 
@@ -236,6 +249,16 @@ void Reload(){
         if(other.tag == "Player"){
             finishEffect.Play();
             Invoke("Reload", reloadTime);
+        }
+    }
+````
+````c#
+    void playHitEffect()
+    {
+        if (hitEffect != null)
+        {
+            ParticleSystem instance = Instantiate(hitEffect, transform.position, Quaternion.identity);
+            Destroy(instance.gameObject, instance.main.duration + instance.main.startLifetime.constantMax);
         }
     }
 ````
