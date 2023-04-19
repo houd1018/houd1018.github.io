@@ -282,6 +282,31 @@ Uncheck "Play on awake"
 
 [audio speaker](https://docs.unity3d.com/Manual/class-AudioSource.html)
 
+[AudioSource](https://docs.unity3d.com/ScriptReference/AudioSource.html)
+
+```c#
+    void playClip(AudioClip audioClip, float Volum)
+    {
+        if (audioClip != null)
+        {
+            AudioSource.PlayClipAtPoint(audioClip, Camera.main.transform.position, Volum);
+        }
+    }
+```
+![0026](/assets/pic/002603.png)
+```c#
+[SerializeField] AudioClip coinPickupSFX;
+    
+    void OnTriggerEnter2D(Collider2D other) 
+    {
+        if (other.tag == "Player")
+        {
+            // one shot audio
+            AudioSource.PlayClipAtPoint(coinPickupSFX, Camera.main.transform.position);
+            Destroy(gameObject);
+        }
+    }
+```
 ## UI Canvas
 [Canvas](https://docs.unity3d.com/Packages/com.unity.ugui@1.0/manual/UICanvas.html)
 ### Background
@@ -579,20 +604,6 @@ public class GameSession : MonoBehaviour
 
 ```
 
-## Audio
-![0026](/assets/pic/002603.png)
-```c#
-[SerializeField] AudioClip coinPickupSFX;
-    
-    void OnTriggerEnter2D(Collider2D other) 
-    {
-        if (other.tag == "Player")
-        {
-            AudioSource.PlayClipAtPoint(coinPickupSFX, Camera.main.transform.position);
-            Destroy(gameObject);
-        }
-    }
-```
 
 ## Singleton Pattern (Scene Persist)
 Put persistant stuff as `Scene Persist`'s children
@@ -634,5 +645,25 @@ Put persistant stuff as `Scene Persist`'s children
         newPos.y = Mathf.Clamp(transform.position.y + delta.y, minBounds.y + paddingBottom, maxBounds.y - paddingTop);
         transform.position = newPos;
 
+    }
+```
+
+## background Scroller
+```c#
+    [SerializeField] Vector2 moveSpeed;
+
+    Vector2 offset;
+    Material material;
+
+    void Awake()
+    {
+        material = GetComponent<SpriteRenderer>().material;
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        offset = moveSpeed * Time.deltaTime;
+        material.mainTextureOffset += offset;
     }
 ```
