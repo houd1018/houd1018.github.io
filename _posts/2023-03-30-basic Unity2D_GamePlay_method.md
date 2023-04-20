@@ -626,8 +626,31 @@ Put persistant stuff as `Scene Persist`'s children
     {
         Destroy(gameObject);
     }
+```
+```c#
+    static AudioPlayer instance;
+
+    void Awake()
+    {
+        ManageSingleton();
+    }
+
+    void ManageSingleton()
+    {
+        if(instance != null)
+        {
+            gameObject.SetActive(false);
+            Destroy(gameObject);
+        }
+        else
+        {
+            instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+    }
 
 ```
+
 ## [Prefab Variants](https://docs.unity3d.com/Manual/PrefabVariants.html)
 
 ## [ViewPoint](https://www.udemy.com/course/unitycourse/learn/lecture/28711404#questions)
