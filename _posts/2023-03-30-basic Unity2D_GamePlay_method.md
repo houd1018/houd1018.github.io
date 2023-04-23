@@ -73,6 +73,10 @@ void Transform.Translate(float x, float y, float z) (+ 5 多个重载)
 ![deltaTime](/assets/pic/rigid_collider.png)
 [Rigidbody.interpolation](https://docs.unity3d.com/ScriptReference/Rigidbody-interpolation.html)
 
+插帧平滑分为`Interpolate`根据上一帧插帧，和`Extrapolate`根据下一帧插帧，可分别尝试
+- 碰撞监测模式通常设置为Discrete离散即可，高速运动时可使用连续监测，但性能消耗较大。
+- Continuous用于会撞上纯碰撞体的高速刚体，Continurous Dynamic用于会撞上其他刚体的高速刚体。
+- Continuous Speculative 比t Dynamic节约性能，对高速旋转扫掠的监测效果更好，但移动类监测更差
 ## OnCollisionEnter2D & OnTrigger
 
 Collider -> is Trigger√
