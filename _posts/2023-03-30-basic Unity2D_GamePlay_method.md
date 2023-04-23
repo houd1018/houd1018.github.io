@@ -51,6 +51,19 @@ void Transform.Translate(float x, float y, float z) (+ 5 多个重载)
     [SerializeField] Sprite CorrectSprite;
     [SerializeField] Sprite DefaultSprite;
 ```
+```c#
+    [Header("General")]
+    [SerializeField] GameObject projectilePrefab;
+    [SerializeField] float projectileSpeed = 10f;
+    [SerializeField] float projectileLifetime = 5f;
+    [SerializeField] float baseFiringRate = 0.2f;
+
+    [Header("AI")]
+    [SerializeField] bool isAI;
+    [SerializeField] float firingRateVariance = 0f;
+    [SerializeField] float minimumFiringRate = 0.1f;
+    [HideInInspector] public bool isFiring;
+```
 
 ## Input.GetAxis()
 
@@ -243,6 +256,16 @@ void Reload(){
         }
     }
 ````
+````c#
+    void playHitEffect()
+    {
+        if (hitEffect != null)
+        {
+            ParticleSystem instance = Instantiate(hitEffect, transform.position, Quaternion.identity);
+            Destroy(instance.gameObject, instance.main.duration + instance.main.startLifetime.constantMax);
+        }
+    }
+````
 Uncheck "Play on awake"
 ![playonawake](/assets/pic/playonawake.png)
 
@@ -263,6 +286,33 @@ Uncheck "Play on awake"
 
 [audio speaker](https://docs.unity3d.com/Manual/class-AudioSource.html)
 
+[AudioSource](https://docs.unity3d.com/ScriptReference/AudioSource.html)
+
+![1843](/assets/pic/IMG_3483.JPG)
+
+```c#
+    void playClip(AudioClip audioClip, float Volum)
+    {
+        if (audioClip != null)
+        {
+            AudioSource.PlayClipAtPoint(audioClip, Camera.main.transform.position, Volum);
+        }
+    }
+```
+![0026](/assets/pic/002603.png)
+```c#
+[SerializeField] AudioClip coinPickupSFX;
+    
+    void OnTriggerEnter2D(Collider2D other) 
+    {
+        if (other.tag == "Player")
+        {
+            // one shot audio
+            AudioSource.PlayClipAtPoint(coinPickupSFX, Camera.main.transform.position);
+            Destroy(gameObject);
+        }
+    }
+```
 ## UI Canvas
 [Canvas](https://docs.unity3d.com/Packages/com.unity.ugui@1.0/manual/UICanvas.html)
 ### Background
@@ -437,7 +487,6 @@ using UnityEngine.InputSystem;
         Vector2 playerVelocity = new Vector2(moveInput.x * runSpeed, rgdb.velocity.y);
         rgdb.velocity = playerVelocity;
     }
-}
 ```
 
 ## Filp
@@ -561,20 +610,6 @@ public class GameSession : MonoBehaviour
 
 ```
 
-## Audio
-![0026](/assets/pic/002603.png)
-```c#
-[SerializeField] AudioClip coinPickupSFX;
-    
-    void OnTriggerEnter2D(Collider2D other) 
-    {
-        if (other.tag == "Player")
-        {
-            AudioSource.PlayClipAtPoint(coinPickupSFX, Camera.main.transform.position);
-            Destroy(gameObject);
-        }
-    }
-```
 
 ## Singleton Pattern (Scene Persist)
 Put persistant stuff as `Scene Persist`'s children
@@ -595,8 +630,31 @@ Put persistant stuff as `Scene Persist`'s children
     {
         Destroy(gameObject);
     }
+```
+```c#
+    static AudioPlayer instance;
+
+    void Awake()
+    {
+        ManageSingleton();
+    }
+
+    void ManageSingleton()
+    {
+        if(instance != null)
+        {
+            gameObject.SetActive(false);
+            Destroy(gameObject);
+        }
+        else
+        {
+            instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+    }
 
 ```
+
 ## [Prefab Variants](https://docs.unity3d.com/Manual/PrefabVariants.html)
 
 ## [ViewPoint](https://www.udemy.com/course/unitycourse/learn/lecture/28711404#questions)
@@ -616,5 +674,25 @@ Put persistant stuff as `Scene Persist`'s children
         newPos.y = Mathf.Clamp(transform.position.y + delta.y, minBounds.y + paddingBottom, maxBounds.y - paddingTop);
         transform.position = newPos;
 
+    }
+```
+
+## background Scroller
+```c#
+    [SerializeField] Vector2 moveSpeed;
+
+    Vector2 offset;
+    Material material;
+
+    void Awake()
+    {
+        material = GetComponent<SpriteRenderer>().material;
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        offset = moveSpeed * Time.deltaTime;
+        material.mainTextureOffset += offset;
     }
 ```
