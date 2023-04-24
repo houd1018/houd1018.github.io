@@ -68,6 +68,10 @@ tags: [unity, C#]    # TAG names should always be lowercase
 
 ## Navigation System
 A* algorithm
+### carve - bake后 可移动分割区域
+![](/assets/pic/234939.png)
+### 规划可移动路线
+标记为static => not walkable => bake
 
 ## objects pool
 predefined pool (**Queue**) to store instance, so that improve the efficiency. There is no more `instantiate` and `destory `.
@@ -106,3 +110,12 @@ predefined pool (**Queue**) to store instance, so that improve the efficiency. T
         print(request.downloadHandler.text);
     }
 ```
+
+## URP设置
+![](/assets/pic/215302.png)
+![](/assets/pic/215113.png)
+
+## shortcut
+- 按住 `v` 可以吸附两个物体的顶点
+- 按住 `ctrl`+`shift` 可以吸附两个物体的平面
+- `ctrl`+`shift`+`f` -> 把摄像机调整到当前视角 
