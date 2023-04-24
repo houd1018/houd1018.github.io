@@ -525,6 +525,7 @@ using UnityEngine.InputSystem;
     void OnTriggerEnter2D(Collider2D other) 
     {
         StartCoroutine(LoadNextLevel());
+        // things here will be excuted first
     }
     
     IEnumerator LoadNextLevel()

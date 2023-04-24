@@ -68,3 +68,41 @@ tags: [unity, C#]    # TAG names should always be lowercase
 
 ## Navigation System
 A* algorithm
+
+## objects pool
+predefined pool (**Queue**) to store instance, so that improve the efficiency. There is no more `instantiate` and `destory `.
+- 初始池可以为空，也可以携带一批默认对象，节约第一次生成对象的性能开销
+- 由于对象池中的「存货」，只有场中对象最大存量大于池中存货时才生成对象。因此池中对象数量到达峰值后，几乎不再需要生成对象，也无需销毁（需要消失时关闭并入队即可）
+```c#
+    public GameObject bulletOrigin;
+    Queue<GameObject> bulletPool = new Queue<GameObject>();
+    void Start()
+    {
+        if(bulletPool.Count == 0){
+            Instantiate(bulletOrigin);
+        }else{
+            bulletPool.Dequeue().SetActive(true);
+        }
+    }
+
+    // if the encountered object is bullet => enqueue
+    private void OnTriggerEnter(Collider other) {
+        if (other.name == bulletOrigin.name + "(Clone)"){
+            other.gameObject.SetActive(false);
+            bulletPool.Enqueue(other.gameObject);
+        }
+    }
+```
+
+## UnityWebRequest
+```c#
+    private void Start() {
+        StartCoroutine(Request());
+    }
+    IEnumerator Request()
+    {
+        UnityWebRequest request = UnityWebRequest.Get("unity.cn");
+        yield return request.SendWebRequest();
+        print(request.downloadHandler.text);
+    }
+```
