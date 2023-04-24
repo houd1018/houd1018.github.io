@@ -50,3 +50,21 @@ tags: [unity, C#]    # TAG names should always be lowercase
     }
 ```
 
+## 鼠标点击检测
+```c#
+    RaycastHit hitInfo;
+    Ray mouseRay;
+    private void Update()
+    {
+        if (Input.GetMouseButtonDown(0))
+        {
+            mouseRay = Camera.main.ScreenPointToRay(Input.mousePosition);
+            if(Physics.Raycast(mouseRay, out hitInfo)){
+                print("点击了" + hitInfo.point);
+            }
+        }
+    }
+```
+
+## Navigation System
+A* algorithm
