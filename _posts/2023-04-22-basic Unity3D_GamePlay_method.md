@@ -119,3 +119,68 @@ predefined pool (**Queue**) to store instance, so that improve the efficiency. T
 - 按住 `v` 可以吸附两个物体的顶点
 - 按住 `ctrl`+`shift` 可以吸附两个物体的平面
 - `ctrl`+`shift`+`f` -> 把摄像机调整到当前视角 
+
+## animation
+### Blend tree
+- Control mutiple animations with blend tree using one parameter like speed.
+- instead of using bool / trigger
+![](/assets/pic/144712.png)
+```c#
+    private void SwitchAnimation(){
+        // vector 3 => magnitude
+        anim.SetFloat("Speed", agent.velocity.sqrMagnitude);
+    }
+```
+
+## post-processing
+![](/assets/pic/142910.png)
+
+## ShaderGraph
+Create ShaderGraph => Create Material
+### 遮挡剔除
+By adjusting URP global renderer to achieve optional render.
+![](/assets/pic/152223.png)
+
+## 需要应用于很多物体 / 需要挂很多component => 如何确保添加Component
+```c#
+// 当脚本挂载的gameobject没有 NavmeshAgent时，自动挂载NavMeshAgent
+[RequireComponent(typeof(NavMeshAgent))]
+public class EnemyController : MonoBehaviour
+{
+    private NavMeshAgent agent;
+
+    private void Awake()
+    {
+        agent = GetComponent<NavMeshAgent>();
+    }
+}
+```
+
+## StateMachine
+
+```c#
+
+    public enum EnemyStates { GUARD, PATROL, CHASE, DEAD }
+    void SwitchStates()
+    {
+        switch (enemyStates)
+        {
+            case EnemyStates.GUARD:
+                break;
+            case EnemyStates.PATROL:
+                break;
+            case EnemyStates.CHASE:
+                break;
+            case EnemyStates.DEAD:
+                break;
+        }
+    }
+```
+
+## Gizmos - visualize parameter in Scene
+```c#
+    private void OnDrawGizmosSelected() {
+        Gizmos.color = Color.blue;
+        Gizmos.DrawWireSphere(transform.position, sightRadius);
+    }
+```

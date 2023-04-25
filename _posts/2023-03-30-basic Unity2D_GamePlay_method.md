@@ -182,8 +182,9 @@ Body -> Screen X/Y -> adjust the position of the camera -> show more what's to c
 ![112231](/assets/pic/112231.png)
 ### Cinemachine Confiner
 ![112231](/assets/pic/113909.png)
-### State-driven camera
-
+### FreeLook
+三个维度 自由设置摄像机
+![](/assets/pic/195455.png)
 ## Location
 
 The position of children is **relative** to the parents
@@ -343,6 +344,11 @@ For more fonts: https://www.dafont.com/
 [Unity Doc Slider](https://docs.unity3d.com/2018.3/Documentation/ScriptReference/UI.Slider.html)
 
 ## Scriptable Objects
+1. Create SO Script
+2. instantiate SO objects
+3. Create **stats** (MonoBehavior) script including each arribute in SO with `get` and `set`
+4. bind the **stats** to your "Player" / "Enemy" Object
+5. Fill in the SO objects in step 2
 ````c#
 [CreateAssetMenu(menuName = "Quiz Question", fileName = "New Question")]
 public class QuestionSO : ScriptableObject
@@ -455,6 +461,11 @@ idle -> loop check
 [Collider2D.IsTouchingLayers](https://docs.unity3d.com/ScriptReference/Collider2D.IsTouchingLayers.html)
 ### transition
 ![transition](/assets/pic/222318.png)
+
+### Switch in different layers
+- create a new layer
+- create an empty state
+- make a bool parameter to transition to any state
 
 ## [input system](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.0/manual/QuickStartGuide.html)
 ![4412](/assets/pic/4412.jpg)
