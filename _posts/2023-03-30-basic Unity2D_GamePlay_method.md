@@ -654,6 +654,16 @@ Put persistant stuff as `Scene Persist`'s children
         }
     }
 
+// ------------------------ another example -------------------
+        private void Awake()
+    {
+        if (Instance != null)
+        {
+            Destroy(gameObject);
+        }
+        Instance = this;
+    }
+
 ```
 
 ## [Prefab Variants](https://docs.unity3d.com/Manual/PrefabVariants.html)

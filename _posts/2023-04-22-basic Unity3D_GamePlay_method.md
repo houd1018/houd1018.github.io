@@ -50,7 +50,7 @@ tags: [unity, C#]    # TAG names should always be lowercase
     }
 ```
 
-## 鼠标点击检测
+## [鼠标点击检测](https://docs.unity3d.com/ScriptReference/Camera.ScreenPointToRay.html)
 ```c#
     RaycastHit hitInfo;
     Ray mouseRay;
