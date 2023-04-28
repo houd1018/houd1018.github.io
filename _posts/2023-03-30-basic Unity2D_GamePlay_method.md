@@ -358,6 +358,21 @@ public class QuestionSO : ScriptableObject
 }
 ````
 ![scriptable](/assets/pic/scriptable.png)
+### How to make a indivudual Data (每个个人不会共享数据)
+- uncheck the chararcterData in the inspector
+- put scriptable objects in the templateData
+- it will instantiate a new object for the individual object
+```c#
+    public CharacterStats_SO templateData;
+    public CharacterStats_SO characterData;
+        private void Awake()
+    {
+        if (templateData != null)
+        {
+            characterData = Instantiate(templateData);
+        }
+    }
+```
 
 ## Lock the Inspector
 [InspectorOptions](https://docs.unity3d.com/Manual/InspectorOptions.html)
@@ -661,6 +676,7 @@ Put persistant stuff as `Scene Persist`'s children
         else
         {
             instance = this;
+            // do not destory when switch the scene
             DontDestroyOnLoad(gameObject);
         }
     }
@@ -675,6 +691,50 @@ Put persistant stuff as `Scene Persist`'s children
         Instance = this;
     }
 
+```
+### Generic Singleton
+```c#
+public class Singleton<T> : MonoBehaviour where T : Singleton<T>
+{
+    private static T instance;
+    public static T Instance
+    {
+        get { return instance; }
+    }
+
+    protected virtual void Awake()
+    {
+        if (instance != null)
+        {
+            Destroy(gameObject);
+        }
+        else
+        {
+            instance = (T)this;
+        }
+    }
+
+    public static bool IsInitialized
+    {
+        get { return instance != null; }
+    }
+
+    protected virtual void OnDestory()
+    {
+        if (instance == this)
+        {
+            instance = null;
+        }
+    }
+}
+```
+Override on the Subclass
+```c#
+    protected override void Awake()
+    {
+        base.Awake();
+        // DontDestroyOnLoad(this);
+    }
 ```
 
 ## [Prefab Variants](https://docs.unity3d.com/Manual/PrefabVariants.html)

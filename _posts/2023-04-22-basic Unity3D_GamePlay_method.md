@@ -184,3 +184,6 @@ public class EnemyController : MonoBehaviour
         Gizmos.DrawWireSphere(transform.position, sightRadius);
     }
 ```
+
+## StateMachineBehaviour
+![](/assets/pic/193427.png)
