@@ -187,3 +187,12 @@ public class EnemyController : MonoBehaviour
 
 ## StateMachineBehaviour
 ![](/assets/pic/193427.png)
+
+## UI
+`scale with screen size` -> resolution independent
+
+![](/assets/pic/105541.png)
+
+**health silder**
+
+![](/assets/pic/110307.png)
