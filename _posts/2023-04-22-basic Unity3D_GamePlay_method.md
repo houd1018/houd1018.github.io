@@ -193,9 +193,49 @@ public class EnemyController : MonoBehaviour
 
 ![](/assets/pic/105541.png)
 
-**health silder**
+### health silder
 
 ![](/assets/pic/110307.png)
+
+### Button
+```c#
+using UnityEngine.UI;
+
+public class MainMenu : MonoBehaviour
+{
+    Button newGameBtn;
+    Button continueBtn;
+    Button quitBtn;
+
+    private void Awake()
+    {
+        newGameBtn = transform.GetChild(1).GetComponent<Button>();
+        continueBtn = transform.GetChild(2).GetComponent<Button>();
+        quitBtn = transform.GetChild(3).GetComponent<Button>();
+
+        quitBtn.onClick.AddListener(QuitGame);
+        newGameBtn.onClick.AddListener(NewGame);
+        continueBtn.onClick.AddListener(ContinueGame);
+    }
+
+    void QuitGame()
+    {
+        Application.Quit();
+        Debug.Log("Quit");
+    }
+
+    void NewGame()
+    {
+        PlayerPrefs.DeleteAll();
+        SceneController.Instance.TransitionToFirstLevel();
+    }
+
+    void ContinueGame()
+    {
+        SceneController.Instance.TransitionToLoadGame();
+    }
+}
+```
 
 ## [异步加载场景SceneManager.LoadSceneAsync](https://docs.unity3d.com/ScriptReference/SceneManagement.SceneManager.LoadSceneAsync.html)
 ```c#
@@ -258,5 +298,36 @@ public class EnemyController : MonoBehaviour
         {
             JsonUtility.FromJsonOverwrite(PlayerPrefs.GetString(key), data);
         }
+    }
+```
+**clear prefs before building 删除存档**
+
+![](/assets/pic/165420.png)
+
+## Timeline 动画
+![](/assets/pic/155054.png)
+![](/assets/pic/153416.png)
+```c#
+using UnityEngine.Playables;
+
+    PlayableDirector director;
+
+    private void Awake()
+    {
+        newGameBtn = transform.GetChild(1).GetComponent<Button>();
+        director = FindObjectOfType<PlayableDirector>();
+        newGameBtn.onClick.AddListener(PlayTimeline);
+        director.stopped += NewGame;
+    }
+
+    void PlayTimeline()
+    {
+        director.Play();
+    }
+
+    void NewGame(PlayableDirector obj)
+    {
+        PlayerPrefs.DeleteAll();
+        SceneController.Instance.TransitionToFirstLevel();
     }
 ```
