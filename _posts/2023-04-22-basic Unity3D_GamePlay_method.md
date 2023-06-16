@@ -196,3 +196,67 @@ public class EnemyController : MonoBehaviour
 **health silder**
 
 ![](/assets/pic/110307.png)
+
+## [异步加载场景SceneManager.LoadSceneAsync](https://docs.unity3d.com/ScriptReference/SceneManagement.SceneManager.LoadSceneAsync.html)
+```c#
+    IEnumerator Transition(string sceneName, TransitionDestination.DestinationTag destinationTag)
+    {
+        // TODO: save data
+        if (SceneManager.GetActiveScene().name != sceneName)
+        {
+            // load scene and player
+            // asy -> make sure load everything in next scene, and current scene didn't freeze at the same time
+            yield return SceneManager.LoadSceneAsync(sceneName);
+            yield return Instantiate(playerPrefeb, GetDestination(destinationTag).transform.position, GetDestination(destinationTag).transform.rotation);
+            yield break;
+        }
+    }
+```
+
+## Awake -> OnEnable -> Start
+```c#
+// subscribe the function when load the scene
+    private void OnEnable()
+    {
+        // move at ground
+        MouseManager.Instance.OnMouseClicked += MoveToTarget;
+
+        MouseManager.Instance.OnEnemyClicked += EventAttack;
+    }
+
+    private void Start()
+    {
+        GameManager.Instance.RegisterPlayer(characterStats);
+    }
+
+// unsubscribe the function when switch the scene
+    private void OnDisable()
+    {
+        if(!MouseManager.IsInitialized) return;
+        
+        MouseManager.Instance.OnMouseClicked -= MoveToTarget;
+
+        MouseManager.Instance.OnEnemyClicked -= EventAttack;
+    }
+```
+
+## Save Data
+[PlayerPrefs: stores Player preferences](https://docs.unity3d.com/ScriptReference/PlayerPrefs.html)
+
+[JsonUtility: Generate a JSON representation of the public fields of an object(SO/Mono)](https://docs.unity3d.com/ScriptReference/JsonUtility.ToJson.html)
+```c#
+    public void Save(Object data, string key)
+    {
+        var jsonData = JsonUtility.ToJson(data, true);
+        PlayerPrefs.SetString(key, jsonData);
+        PlayerPrefs.Save();
+    }
+
+    public void Load(Object data, string key)
+    {
+        if (PlayerPrefs.HasKey(key))
+        {
+            JsonUtility.FromJsonOverwrite(PlayerPrefs.GetString(key), data);
+        }
+    }
+```
