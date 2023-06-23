@@ -129,3 +129,15 @@ public class DragItem : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDrag
 }
 
 ```
+
+## 实现映射渲染： RawImage / 独立 Camera / render Texture
+
+render Texture
+
+![](/assets/pic/154709.png)
+
+RawImage
+![](/assets/pic/154752.png)
+
+独立 Camera
+![](/assets/pic/154824.png)
