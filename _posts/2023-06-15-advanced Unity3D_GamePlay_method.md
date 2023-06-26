@@ -247,3 +247,27 @@ public class DialogueData_SO : ScriptableObject
 #endif
 }
 ```
+
+## Task
+### Find tasks in the list
+[Linq usage](https://houd1018.github.io/posts/C-_intro/#linq-%E6%9F%A5%E8%AF%A2%E6%93%8D%E4%BD%9C)
+```c#
+    public List<QuestTask> tasks = new List<QuestTask>();
+
+    public bool HaveQuest(QuestData_SO data)
+    {
+        if (data != null)
+        {
+            return tasks.Any(q => q.questData.questName == data.questName);
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    public QuestTask GetTask(QuestData_SO data)
+    {
+        return tasks.Find(q => q.questData.questName == data.questName);
+    }
+```
