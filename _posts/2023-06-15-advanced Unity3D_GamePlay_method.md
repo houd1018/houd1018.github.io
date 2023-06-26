@@ -141,3 +141,109 @@ RawImage
 
 独立 Camera
 ![](/assets/pic/154824.png)
+
+## ToolTip
+### Content Size Fitter: auto-resize UI
+![](/assets/pic/112151.png)
+
+```c#
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using TMPro;
+
+public class ItemToolTip : MonoBehaviour
+{
+    public TextMeshProUGUI itemNameText;
+    public TextMeshProUGUI itemInfoText;
+    public RectTransform rectTransform;
+
+
+    private void Awake()
+    {
+        rectTransform = GetComponent<RectTransform>();
+    }
+    public void SetupTooltip(ItemData_SO item)
+    {
+        itemNameText.text = item.itemName;
+        itemInfoText.text = item.description;
+    }
+
+    private void OnEnable()
+    {
+        UpdatePosition();
+    }
+    private void Update()
+    {
+        UpdatePosition();
+    }
+
+    public void UpdatePosition()
+    {
+        Vector3 mousePos = Input.mousePosition;
+        Vector3[] cornors = new Vector3[4];
+        rectTransform.GetWorldCorners(cornors);
+
+        float width = cornors[3].x - cornors[0].x;
+        float height = cornors[1].y - cornors[0].y;
+
+        if (mousePos.y < height)
+        {
+            rectTransform.position = mousePos + Vector3.up * height * 0.6f;
+        }
+        else if (Screen.width - mousePos.x > width)
+        {
+            rectTransform.position = mousePos + Vector3.right * width * 0.6f;
+        }
+        else
+        {
+            rectTransform.position = mousePos + Vector3.left * width * 0.6f;
+        }
+    }
+}
+
+```
+### [RectTransform.GetWorldCorners](https://docs.unity.cn/cn/current/ScriptReference/RectTransform.GetWorldCorners.html)
+![](/assets/pic/112012.png)
+
+## Dialogue
+![](/assets/pic/211315.png)
+![](/assets/pic/211333.png)
+### OnValidate(): for Dic in the SO Scripts
+
+```c#
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+[CreateAssetMenu(fileName = "New Dialogue", menuName = "Dialogue/Dialogue Data")]
+public class DialogueData_SO : ScriptableObject
+{
+    public List<DialoguePiece> dialoguePieces = new List<DialoguePiece>();
+    public Dictionary<string, DialoguePiece> dialogueIndex = new Dictionary<string, DialoguePiece>();
+
+// synchornize the id and index
+#if UNITY_EDITOR
+// only run when making changes in the SO file from the Inspector Panel
+    void OnValidate()//仅在编辑器内执行导致打包游戏后字典空了
+    {
+        dialogueIndex.Clear();
+        foreach (var piece in dialoguePieces)
+        {
+            if (!dialogueIndex.ContainsKey(piece.ID))
+                dialogueIndex.Add(piece.ID, piece);
+        }
+    }
+#else
+    void Awake()//保证在打包执行的游戏里第一时间获得对话的所有字典匹配 
+    {
+        dialogueIndex.Clear();
+        foreach (var piece in dialoguePieces)
+        {
+            if (!dialogueIndex.ContainsKey(piece.ID))
+                dialogueIndex.Add(piece.ID, piece);
+        }
+    }
+#endif
+}
+```
