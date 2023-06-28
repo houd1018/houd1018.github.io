@@ -271,3 +271,103 @@ public class DialogueData_SO : ScriptableObject
         return tasks.Find(q => q.questData.questName == data.questName);
     }
 ```
+```c#
+    public void CheckQuestProgress()
+    {
+        var finishRequires = questRequires.Where(r => r.requireAmount <= r.currentAmount);
+        isComplete = questRequires.Count == finishRequires.Count();
+
+        if (isComplete)
+        {
+            Debug.Log("Complete!");
+        }
+    }
+```
+
+## Editor Script
+### New Inspector
+```c#
+// define which file should be chousen
+[CustomEditor(typeof(DialogueData_SO))]
+public class DialogueCustomEditor : Editor
+{
+    public override void OnInspectorGUI()
+    {
+        if (GUILayout.Button("Open in Editor"))
+        {
+            DialogueEditor.InitWindow((DialogueData_SO)target);
+        }
+        base.OnInspectorGUI();
+    }
+}
+```
+### ReorderableList: render enumerable object
+![](/assets/pic/014543.png)
+```c#
+piecesList = new ReorderableList(currentData.dialoguePieces, typeof(DialoguePiece), true, true, true, true);
+piecesList.drawHeaderCallback += OnDrawPieceHeader;
+piecesList.drawElementCallback += OnDrawPieceListElement;
+piecesList.elementHeightCallback += OnHightChanged;
+```
+### OnSelectionChange()
+```c#
+    // when change to another file without quit
+    private void OnSelectionChange()
+    {
+        var newData = Selection.activeObject as DialogueData_SO;
+        if (newData != null)
+        {
+            currentData = newData;
+            SetupReorderableList();
+        }
+        else
+        {
+            currentData = null;
+            piecesList = null;
+        }
+        Repaint();
+    }
+```
+### Create & Save New File
+```c#
+            if (GUILayout.Button("Create New Dialogue"))
+            {
+                string dataPath = "Assets/Game Data/Dialogue/";
+                if (!Directory.Exists(dataPath))
+                {
+                    Directory.CreateDirectory(dataPath);
+                }
+                DialogueData_SO newData = ScriptableObject.CreateInstance<DialogueData_SO>();
+                AssetDatabase.CreateAsset(newData, dataPath + "/" + "New Dialogue.asset");
+                currentData = newData;
+            }
+```
+### Scroller
+```c#
+        if (currentData != null)
+        {
+            EditorGUILayout.LabelField(currentData.name, EditorStyles.boldLabel);
+            GUILayout.Space(10);
+
+            // scoller
+            scrollPos = GUILayout.BeginScrollView(scrollPos, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+            if (piecesList == null)
+            {
+                SetupReorderableList();
+            }
+
+            // draw the list
+            piecesList.DoLayoutList();
+            GUILayout.EndScrollView();
+        }
+```
+### Dirty Object: auto-save, Undo ... in the inspector
+```c#
+        // SetDirty -> make data in the new panel be auto-save, Undo...
+        EditorUtility.SetDirty(currentData);
+```
+### Expand
+```c#
+            // pointer -> sync with currentPiece.canExpand
+            currentPiece.canExpand = EditorGUI.Foldout(tempRect, currentPiece.canExpand, currentPiece.ID);
+```
