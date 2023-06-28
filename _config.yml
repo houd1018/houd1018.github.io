@@ -19,9 +19,9 @@ timezone: Asia/Shanghai
 # jekyll-seo-tag settings › https://github.com/jekyll/jekyll-seo-tag/blob/master/docs/usage.md
 # ↓ --------------------------
 
-title: 霍师傅's Blog                          # the main title
+title: DaZhou Studio                       # the main title
 
-tagline: Greetings! 霍师傅在这想写啥就写啥   # it will display as the sub-title
+tagline: Greetings! I am Howard, Technical Artist & Game Developer, last but not least, Gamer!  # it will display as the sub-title
 
 description: >-                        # used by seo meta and the atom feed
   A Doc site
