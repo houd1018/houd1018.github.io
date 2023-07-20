@@ -82,7 +82,7 @@ https://www.blender.org/
 
 **跟着教程尝试一个完整的建模Pipeline**
 
-- 记得在preference中选择cuda/optiX任一tab后，在左下角点保存（不然不生效，渲染速度慢）、
+- 记得在preference中选择cuda/optiX任一tab后，再关闭窗口（不然不生效，渲染速度慢）、
 
   右侧Scene窗口也要选择GPU Compute
 
@@ -309,3 +309,23 @@ https://www.blender.org/
 - [材质篇：简单的UV纹理绘制](https://www.bilibili.com/video/BV14u41147YH?p=19&vd_source=b3dd25013db68693b4a0fff3bf691805)
 
 ![](/assets/pic/212521.png)
+
+## 场景灯光
+
+### 布光基础
+
+![](/assets/pic/205042.png)
+
+### 如何复制模型（.blend）
+
+**Append**
+
+- 可以直接修改，方便快捷
+- 导致场景文件过大，占用资源
+
+**Link / Ctrl C + V**
+
+- 节省资源，防止文件过大
+- 一个模型可以关联给多个场景
+- 修改原文件，所有关联场景自动替换
+- 没法直接修改需要到源文件修改
