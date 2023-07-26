@@ -161,6 +161,8 @@ https://www.blender.org/
 
 选中单个物体中**独立的一部分**：L
 
+快速定位：小键盘 **.** (在outliner中找到hierarchy的方法)
+
 
 ### Modifier
 
@@ -329,3 +331,41 @@ https://www.blender.org/
 - 一个模型可以关联给多个场景
 - 修改原文件，所有关联场景自动替换
 - 没法直接修改需要到源文件修改
+
+## 动画篇
+
+## TimeLine
+
+* i: 插入关键帧
+* Shape key: 形变动画
+
+![](/assets/pic/123739.png)
+
+* 在Graph editor中添加modifier -> loop等
+
+### 骨骼绑定
+
+Pose mode: 变换骨骼位置
+
+edit mode: 添加删减骨骼
+
+* 需要在object mode
+* 模型需要在Armature的子集 **Ctrl+P -> Armature deform**
+
+Example: Bendy Bones
+
+### Constrains
+
+* 跟随
+
+![](/assets/pic/140827.png)
+
+## Output
+
+* 设置Eeve或者Cycle的渲染
+* 输出：可以先设置为30% 检查无误后再输出100%
+
+![](/assets/pic/155151.png)
+
+* 用blender或者别的软件将每一帧图片输出为视频
+* ![](/assets/pic/161123.png)
