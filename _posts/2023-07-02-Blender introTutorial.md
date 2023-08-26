@@ -48,6 +48,8 @@ https://www.blender.org/
 - R：旋转
 - S：缩放
 - alt + G/R/S : 清除上述操作 回到默认值
+- GRS + shift + xyz: 保持xyz轴，对剩下的轴操作 
+- shift + RGS: 重复上一次的RGS操作, 并复制物体
 - H：隐藏物体 （shift+H：把没有选中的物体隐藏）
 - T：隐藏/显示 左侧工具栏
 - N：显示/隐藏 右侧工具栏
@@ -69,6 +71,7 @@ https://www.blender.org/
 - 和Unity一样可以保存面板
 - 理解 **游标**和**原点**
 - 理解 世界坐标 和 local坐标
+- 只有在viewpoint shading - render mode中才能看到artificial light的光线影响
 
 **快捷键**
 
@@ -126,15 +129,21 @@ https://www.blender.org/
 8. 切刀 Knife: K （按鼠标右键或者空格键退出）
 9. 桥接: CTRL+E （桥接必须是同一个物体）合并物体:CTRL+J
 10. 分离: P
+11. GG: moving it along one of the connected edges.
 
 **Cautions:** 
 
 1. 尽量不要在物体模式下缩放，尽量在编辑模式下缩放。
 2. 假如你在物体模式下做过缩放:记得应用下这个缩放。（CTRL+A -> Apply Scale）
+3. 不要再edit mode中添加物体 （不然返回object mode，两种物体会在一块）
+   - P -> loose part
+4. 在edit mode中移动物体 -> 不影响origin （用来修改origin的位置）
 
 -----------
 
 **复制**: shift + D (复制出新物体) alt + D (复制出关联物体 -> 数据会同步修改) 
+
+**Link**: Ctrl+L
 
 **设置父级**：
 
@@ -202,6 +211,8 @@ https://www.blender.org/
 
 **Displace**: 使用材质的灰度来映射出平面 -> 快速建模（eg. 石头/山峰地形）
 
+**Decimate**：用来减面
+
 ## 材质篇
 
 - 学会如何添加和删除材质 | 用两个节点做简单材质 
@@ -224,7 +235,7 @@ https://www.blender.org/
 #### 输入参数：(多试试)
 
 - **基础色 Base Color** - 模型的颜色，也可以接一个颜色贴图，一般不要纯黑或者纯白
-- **金属度 Metallic** - 0 是非金属，1是金属,一般我们要么选0，要么选1
+- **金属度 Metallic** - 0 是非金属，1是金属,**一般我们要么选0，要么选1**
 - **糙度 Roughness** - 0代表越平滑，1代表越粗，确定**漫反射和镜面反射**时候物体表面的粗糙程度
 - **次表面 Subsurface** - 决定你的模型是不是**透光**的，比如皮肤，窗帘等的通透程度，一般不会调太大，没有那么通透的东西
   - **次表面半径** - 决定半透光散射的距离，三个值分别代表RGB三个通道的散射半径，
@@ -308,6 +319,9 @@ https://www.blender.org/
 
 ### UV editing
 - 需要在编辑模式
+- GG -> 在edit mode中移动UV（直接G会拉伸贴图，UV不变）
+- L -> 以seam选择UV
+- **process：** edit mode -> mark Seam -> select island with L -> unwarp
 - [材质篇：简单的UV纹理绘制](https://www.bilibili.com/video/BV14u41147YH?p=19&vd_source=b3dd25013db68693b4a0fff3bf691805)
 
 ![](/assets/pic/212521.png)
@@ -317,6 +331,12 @@ https://www.blender.org/
 ### 布光基础
 
 ![](/assets/pic/205042.png)
+
+- 打光面积越小 -> shadow getting sharper
+
+### 世界光
+
+![](/assets/pic/222650.png)
 
 ### 如何复制模型（.blend）
 
@@ -369,3 +389,22 @@ Example: Bendy Bones
 
 * 用blender或者别的软件将每一帧图片输出为视频
 * ![](/assets/pic/161123.png)
+
+## Misc
+
+### smooth shading -> auto smooth 
+
+audo smooth可以选择smooth的角度限制
+
+![](/assets/pic/220957.png)
+
+![](/assets/pic/221223.png)
+
+### Snap 吸附面
+
+![](/assets/pic/170534.png)
+
+### **Align Camera to View**
+
+**Method 1: Quick Align**
+Press `Ctrl` + `Alt` + `Numpad 0`. This shortcut aligns the selected camera to the current viewport view instantly.
