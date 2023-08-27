@@ -354,14 +354,19 @@ https://www.blender.org/
 
 ## 动画篇
 
-## TimeLine
+### TimeLine
 
 * i: 插入关键帧
 * Shape key: 形变动画
+* record button
 
 ![](/assets/pic/123739.png)
 
 * 在Graph editor中添加modifier -> loop等
+
+* T: insert interpolation
+
+  ![](/assets/pic/185012.png)
 
 ### 骨骼绑定
 
