@@ -389,7 +389,7 @@ Example: Bendy Bones
 
 Vertex weights determine how much influence different bones in an armature (skeleton) have on specific vertices of a mesh. 
 
-![](./../assets/pic/222104.png)
+![](/assets/pic/222104.png)
 
 ### Constrains
 
