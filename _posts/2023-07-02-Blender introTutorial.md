@@ -374,10 +374,22 @@ Pose mode: 变换骨骼位置
 
 edit mode: 添加删减骨骼
 
-* 需要在object mode
-* 模型需要在Armature的子集 **Ctrl+P -> Armature deform**
+1. 增加环切（使它可以弯折 distortion）
+2. add amature
+
+- ctrl + p -> parent -> 链接bone
+- offset：shift + d 之后保持对应关系
+
+* 模型需要在Armature的子集 **object mode -> Ctrl+P -> Armature deform(with automatic weights)**
+* select all the bones before insert anim keyframe
 
 Example: Bendy Bones
+
+#### weights
+
+Vertex weights determine how much influence different bones in an armature (skeleton) have on specific vertices of a mesh. 
+
+![](./../assets/pic/222104.png)
 
 ### Constrains
 
