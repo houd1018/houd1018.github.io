@@ -370,6 +370,8 @@ https://www.blender.org/
 
 ### 骨骼绑定
 
+**remeber model symm on X-axis -> flip x anim & mirror**
+
 Pose mode: 变换骨骼位置
 
 edit mode: 添加删减骨骼
@@ -377,19 +379,44 @@ edit mode: 添加删减骨骼
 1. 增加环切（使它可以弯折 distortion）
 2. add amature
 
-- ctrl + p -> parent -> 链接bone
+- ctrl + p -> parent -> 链接bone || alt + P -> clear parent
 - offset：shift + d 之后保持对应关系
 
 * 模型需要在Armature的子集 **object mode -> Ctrl+P -> Armature deform(with automatic weights)**
+
 * select all the bones before insert anim keyframe
 
+* ensure bone is facing us by adujust **Roll**
+
+  ![](/assets/pic/101125.png)
+
+* bones with name in *_l or _r* can be symm (edit mode)
+
+  ![](/assets/pic/103426.png)
+
 Example: Bendy Bones
+
+#### IK - inverse kinematics || FK - forward kinemtics
+
+Inverse Kinematics allows you to control the position and orientation of a part of a character's body (like the hand or foot) **by moving another part** (like the wrist or ankle). 
+
+1. uncheck deform (will not stick to the mesh)
+
+2. unparent
+
+![](/assets/pic/105525.png)
+
+3. pose mode -> add bone constraint -> IK
+
+   ![](/assets/pic/110533.png)
 
 #### weights
 
 Vertex weights determine how much influence different bones in an armature (skeleton) have on specific vertices of a mesh. 
 
 ![](/assets/pic/222104.png)
+
+- choose amature -> choose model -> weight paint mode -> ctrl + left click to find the weights of each bone
 
 ### Constrains
 
@@ -425,3 +452,7 @@ audo smooth可以选择smooth的角度限制
 
 **Method 1: Quick Align**
 Press `Ctrl` + `Alt` + `Numpad 0`. This shortcut aligns the selected camera to the current viewport view instantly.
+
+### frame 24 = 0, so acutally start from 1
+
+![](/assets/pic/114258.png)
