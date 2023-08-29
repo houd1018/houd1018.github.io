@@ -2,7 +2,7 @@
 title: Blender introTutorial
 date: 2023-07-02 20:00:00 -800
 categories: [DCC]
-tags: [Blender]    # TAG names should always be lowercase
+tags: [blender]    # TAG names should always be lowercase
 ---
 # Blender introTutorial
 
