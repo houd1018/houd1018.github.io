@@ -63,8 +63,55 @@ tags: [cg, unity, shader]    # TAG names should always be lowercase
 
 ### Lambert Light Model
 
+- simple and fast
+- not good at generating reflections and highlights
+
+**Lambert is a lighting model that defines the relationship between the brightness of a surface and its orientation to the light source.**
+
+- When the angle between the light source and normal is small, the face get brighter. -> get **intensity**
+
+- C: Color of the light
+- A: attenuation (Strength of the light)
+
+![](/assets/pic/122511.png)
+
 - ambient: background light in an environment that doesn't emanate from anywhere.
 - diffuse(simplest):  illuminates the geometry of an object, giving it depth and volume
 - Specular: bounces off a surface and can be used to create shiny patches.
 
 ![](/assets/pic/000322.png)
+
+**[Diffuse] being lit apparently from a light source that's at (5,5,5) in the world.**
+
+![](/assets/pic/125343.png)
+
+### Lighting Models
+
+#### Specular Reflection /  Lambert & Blinn-Phong
+
+![](/assets/pic/133429.png)
+
+- The angle between the normal and the half way is then used to work out the intensity. -> efficient
+
+  **[Specular]**
+
+  ![](/assets/pic/141256.png)
+
+### Physically-Based Rendering
+
+- **Reflection**: reverse calculation to lighting
+
+- **Diffusion**: how color and light are distributed across the surface by considering what light is absorbed and what is reflected and how.
+
+- **Translucency and Transparency**
+
+- **Conservation of Energy**: a concept that ensures objects never reflect more light than they receive.
+
+- **Metallicity**: the interaction of light on shiny surfaces and the highlights and colors that are reflected.
+
+- **Fresnel Reflectivity**: how reflections on a curved surface become stronger towards the edges.
+
+  ![](/assets/pic/134558.png)
+
+- **Microsurface Scattering**
+
