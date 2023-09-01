@@ -135,13 +135,18 @@ Built-in Lit shader
 
 ## Coordinate Spaces
 
+- object space
+- world space
+- view space 
+-  tangent space (each vertex has a tangent space)
 
+![](/assets/pic/094713.png)
 
+![](/assets/pic/094906.png)
 
+- position(object space) -> Base Color
 
-
-
-
+![](/assets/pic/095359.png)
 
 ## Misc
 
