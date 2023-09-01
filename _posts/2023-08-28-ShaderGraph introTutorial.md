@@ -99,6 +99,8 @@ tags: [cg, unity, shader]    # TAG names should always be lowercase
 
 ### Physically-Based Rendering
 
+Built-in Lit shader
+
 - **Reflection**: reverse calculation to lighting
 
 - **Diffusion**: how color and light are distributed across the surface by considering what light is absorbed and what is reflected and how.
@@ -114,4 +116,40 @@ tags: [cg, unity, shader]    # TAG names should always be lowercase
   ![](/assets/pic/134558.png)
 
 - **Microsurface Scattering**
+
+### Reflection
+
+#### reflect skybox - cubemap
+
+![](/assets/pic/231033.png)
+
+![](/assets/pic/231645.png)
+
+#### reflect object - Reflection Probe
+
+![](/assets/pic/232914.png)
+
+![](/assets/pic/233047.png)
+
+![](/assets/pic/233755.png)
+
+## Coordinate Spaces
+
+
+
+
+
+
+
+
+
+## Misc
+
+- **Gray Scale** for Metallic Texture: R or G or B is the same (choose any three of them)
+
+![](/assets/pic/220838.png)
+
+- **Invert Colors** - Invert the gray scale
+
+![](/assets/pic/223520.png)
 
