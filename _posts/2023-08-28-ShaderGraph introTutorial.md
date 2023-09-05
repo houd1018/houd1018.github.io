@@ -1,5 +1,5 @@
 ---
-title: Shader introTutorial
+title: ShaderGraph introTutorial
 date: 2023-08-27 23:00:00 -800
 categories: [Shader]
 tags: [cg, unity, shader]    # TAG names should always be lowercase
@@ -9,8 +9,8 @@ tags: [cg, unity, shader]    # TAG names should always be lowercase
 
 ## what is Vertex and Fragment - Rasterization
 
-- Vertex -> mesh
-- Fragment -> coloring pixel
+- Vertex -> mesh -> calculated by **per vertex**
+- Fragment -> coloring pixel -> calculated **by per pixel**
 - Vertex + Fragment = Master Stack
 
 ![](/assets/pic/234653.png)
@@ -148,13 +148,61 @@ Built-in Lit shader
 
 ![](/assets/pic/095359.png)
 
+### Object Space
+
+**Time**
+
+![](/assets/pic/TOVW.gif)
+
+### World Space
+
+![](/assets/pic/worldSpacegif.gif)
+
+[splat map](https://en.wikipedia.org/wiki/Texture_splatting)
+
+- split
+- Comparison
+- Branch
+
+![](/assets/pic/215236.png)
+
+### View Space
+
+![](/assets/pic/221427.png)
+
+### Tangent Space (Texture Space)
+
+![](/assets/pic/223953.png)
+
+- normal ->  z axis in object space.
+
+  - To calculate between Camera and Light, turn Camera and Light to Object Space. Instead of object, because an model and have a lot of nomal
+  - tangent space is on the next level down and it comes into its own when we start using special images to define the surface textures with respect to lighting on the surface of each plane, of the mesh in a technique that we call **tangent space normal mapping**. 
+    - Fake light effect on texture without changing any vertex
+    - calculate the light effects based on the normal specified at **each pixel** as per the image that you're using.
+    - faking it by putting a whole bunch of new normals across an entire surface using the normal image
+
+  [Messing with Tangent Space](https://www.gamedeveloper.com/programming/messing-with-tangent-space)
+
+![](/assets/pic/230438.png)
+
+![](/assets/pic/232657.png)
+
+## Unity's Render Pipeline
+
+
+
 ## Misc
 
-- **Gray Scale** for Metallic Texture: R or G or B is the same (choose any three of them)
+- ### Gray Scale for Metallic Texture: R or G or B is the same (choose any three of them)
 
 ![](/assets/pic/220838.png)
 
-- **Invert Colors** - Invert the gray scale
+- ### Invert Colors - Invert the gray scale
 
 ![](/assets/pic/223520.png)
+
+- ### debug Gizmos for World / Object / View Space
+
+![](/assets/pic/220018.png)
 
