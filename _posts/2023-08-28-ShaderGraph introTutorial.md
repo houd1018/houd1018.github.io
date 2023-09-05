@@ -190,7 +190,12 @@ Built-in Lit shader
 
 ## Unity's Render Pipeline
 
-
+- HDRP
+  - targets high end hardware and desktop PCs and consoles.
+  - Ray-tracing
+  - not for 2D game and mobile game
+- URP
+  - better performance
 
 ## Misc
 
