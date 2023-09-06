@@ -194,8 +194,12 @@ Built-in Lit shader
   - targets high end hardware and desktop PCs and consoles.
   - Ray-tracing
   - not for 2D game and mobile game
+  - Bend Normal(new node):  part of ambient occlusion calculations <- SD
 - URP
   - better performance
+  - 2D shaders
+
+[Unity Rendering Pipeline Difference](https://portal.productboard.com/unity/1-unity-platform-rendering-visual-effects/tabs/3-universal-pipeline)
 
 ## Misc
 
@@ -211,3 +215,4 @@ Built-in Lit shader
 
 ![](/assets/pic/220018.png)
 
+- ### SubGraph
