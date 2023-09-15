@@ -201,9 +201,76 @@ Built-in Lit shader
 
 [Unity Rendering Pipeline Difference](https://portal.productboard.com/unity/1-unity-platform-rendering-visual-effects/tabs/3-universal-pipeline)
 
+### Forward and Deferred rendering
+
+Vertex -> **Geometry** (forward / deferred) -> Fragment 
+
+[Forward](https://docs.unity3d.com/Manual/RenderTech-ForwardRendering.html)
+
+[Deferred](https://docs.unity3d.com/Manual/RenderTech-DeferredShading.html) 
+
+![](/assets/pic/215059.png)
+
+![](/assets/pic/215332.png)
+
+![](/assets/pic/215548.png)
+
+#### Drawcalls
+
+![](/assets/pic/220435.png)
+
+## Blending
+
+### Basics
+
+Average: taking pixel values and mathematically add them up, then get average
+
+(Target + Blend) / 2
+
+![](/assets/pic/224052.png)
+
+### Linear & Color Burn
+
+**Linear Burn**: Target + Blend - 1
+
+**Color Burn**: 1-(1-target) / Blend
+
+![](/assets/pic/001550.png)
+
+### More blending nodes
+
+![](/assets/pic/002438.png)
+
+### Darkening Blend
+
+- Darken:  min(Target, Blend) -> **emphasize the dark** in the blend image. White will be ignored
+- Multiply: Target * Blend
+- Linear Burn
+
+### Lightening Blend
+
+- Lighten: max(Target,Blend), opposite to the Darken 
+- Screen: 1-(1-Target)*(1-Blend), blend two color
+- Dodge: target/(1- Blend)
+- Linear Dodge: Target + Blend
+
+### Contrasting Blend
+
+- Overlay (Dark getting darker): most usually for blending two colors 
+
+![](/assets/pic/011741.png)
+
+- Soft Light
+- Linear Light
+- Vivid Light
+- Hard Light
+- Pin Light
+
+
+
 ## Misc
 
-- ### Gray Scale for Metallic Texture: R or G or B is the same (choose any three of them)
+- ###  Gray Scale for Metallic Texture: R or G or B is the same (choose any three of them)
 
 ![](/assets/pic/220838.png)
 
@@ -216,3 +283,12 @@ Built-in Lit shader
 ![](/assets/pic/220018.png)
 
 - ### SubGraph
+
+- ### Transparent
+
+  - determine whether part is transparent or not
+  - white -> 1 -> opaque
+  - black -> 0 -> Transparent
+  
+  ![](/assets/pic/010501.png)
+  
