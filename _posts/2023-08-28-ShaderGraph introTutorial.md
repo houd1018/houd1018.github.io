@@ -266,7 +266,167 @@ Average: taking pixel values and mathematically add them up, then get average
 - Hard Light
 - Pin Light
 
+## Time
 
+![](/assets/pic/102226.png)
+
+![](/assets/pic/102458.png)
+
+- delta time is the time and seconds since the **last frame was rendered**. -> used for object in moving with **update()**
+
+### Scroll
+
+![](/assets/pic/180409.png)
+
+### Portal effect
+
+![](/assets/pic/181600.png)
+
+## Lerp 
+
+For **blending one state with another** -> two image or two color
+
+![](/assets/pic/191810.png)
+
+![](/assets/pic/191941.png)
+
+**Node**
+
+- Replace Color
+- Clamp
+
+### Lerping a Liquid
+
+- Comparison $ Branch -> **make division**
+
+![](/assets/pic/203520.png)
+
+## Tiling & Masking
+
+### Tiling
+
+- offset:  moving the UVs to seamlessly snap together. -> for scrolling effect
+
+![](/assets/pic/203943.png)
+
+### Mask
+
+- black section -> 0: can be where you don't want anything to come through 
+
+- white section -> 1: can be where you do want colors to come through.
+
+  ![](/assets/pic/231136.png)
+
+  ## Procedural Generation
+
+- One dimensional noise appears as a line graph
+
+- Two dimensional noise can be used to generate **textures or the height values of a landscape**.
+
+**Perlin Noise**
+
+![](/assets/pic/234137.png)
+
+### Noise Vertex Displacement
+
+**Node**
+
+- Combine
+- Sine
+
+![](/assets/pic/091555.png)
+
+- Simple Noise
+
+![](/assets/pic/simpleNoise_PCG.gif)
+
+### Texture_PCG
+
+- [SmoothStep](https://docs.unity3d.com/Packages/com.unity.shadergraph@6.9/manual/Smoothstep-Node.html): Returns the result of a smooth Hermite interpolation between 0 and 1, if the value of input **In** is between the values of inputs **Edge1** and **Edge2** respectively. Returns 0 if the value of input **In** is less than the value of input **Step1** and 1 if greater than the value of input **Step2**.
+
+- [Improved noise line formular](https://thebookofshaders.com/11/)
+
+  ![](/assets/pic/101737.png)
+
+  #### Seamless
+
+  - invert colors
+  - make top and bottom symmetrical
+
+  ![](/assets/pic/102325.png)
+
+#### Voronoi
+
+![](/assets/pic/104942.png)
+
+#### Normal from height / Smoothness / Metallic 
+
+from **gray scale** -> Lit
+
+![](/assets/pic/110345.png)
+
+#### tile based texture: Shape
+
+- [fraction](https://docs.unity3d.com/Packages/com.unity.shadergraph@6.9/manual/Fraction-Node.html)
+
+![](/assets/pic/111827.png)
+
+- turn to gray scale image
+
+  - ![](/assets/pic/111905.png)
+
+  - Rectangle node
+
+    ![](/assets/pic/112953.png)
+
+  - Ellipse / Polygon / rounded rectangle: same as rectangle
+
+
+### Voronoi
+
+- Perlin Noise: creates sort of **natural** looking landscapes
+- Voronoi:  only allows you to divide space up in the way that **humans** actually do
+  - dividing space up based on **closest points**
+  - ![](/assets/pic/114759.png)
+
+eg. Curtain Effect
+
+![](/assets/pic/curtainEffect.gif)
+
+### Eg. Simple Fire - Gradient Noise
+
+![](/assets/pic/231842.png)
+
+![](/assets/pic/fireEffect2.gif)
+
+### Eg. UV Ripple: UV Lerp with Voronoi
+
+![](/assets/pic/233321.png)
+
+## Illusion of Depth
+
+- How does bump map works: change the process of rendering -> fake the fact that the normal could be at a different angle and create bumps
+
+  ![](/assets/pic/234422.png)
+
+- set normal map: remap -1 to 1, rather than 0 to 1
+- If the **Z is a positive value**, then it is facing towards the camera, which means the camera can see that side of the image, and therefore it can then be used for calculating lighting.
+- If the **Z is negative**, then there's no lighting on that particular side of your polygon
+
+![](/assets/pic/002205.png)
+
+- Node: **Normal Strength** / **[Normal Blend](https://docs.unity3d.com/Packages/com.unity.shadergraph@6.9/manual/Normal-Blend-Node.html)**
+
+![](/assets/pic/003102.png)
+
+- Node: **[Swizzle](https://docs.unity3d.com/Packages/com.unity.shadergraph@6.9/manual/Swizzle-Node.html)**: Get Channels
+- Node: Normal Reconstruct Z: Get Z value based on RG. (Use this when using slider to interpolate two normal map)
+
+### Eg. Lava Ripple
+
+- normal map & mainTex UV Lerp with Voronoi
+
+![](/assets/pic/lavaEffect.gif)
 
 ## Misc
 
@@ -292,3 +452,17 @@ Average: taking pixel values and mathematically add them up, then get average
   
   ![](/assets/pic/010501.png)
   
+- ### remap
+
+  ![](/assets/pic/remap.gif)
+
+- ### make sure using correct texture -> make shader less complicated
+
+![](/assets/pic/114022.png)
+
+- ### Blending Mode
+
+  ![](/assets/pic/214348.png)
+
+  - additive:  add the pixel value for what's behind ->  especially for **transparent**: add black (0) -> show background color
+
