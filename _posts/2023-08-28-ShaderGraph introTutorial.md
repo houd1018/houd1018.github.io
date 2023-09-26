@@ -428,6 +428,34 @@ eg. Curtain Effect
 
 ![](/assets/pic/lavaEffect.gif)
 
+## Depth Intersection
+
+Node: 
+
+- **Scene Depth**
+
+- **Screen Position**
+
+  it's the shorter of the two between the same depth or the screen positions w value that's going to indicate **which pixel gets drawn on the screen.**
+
+![](/assets/pic/175332.png)
+
+Screen Position W come from Clipping: Clipping is when the graphics card decides if a vertex is **within the camera's viewing volume**
+
+W: representative of **the depth into the scene** of our fragments
+
+https://carmencincotti.com/2022-05-02/homogeneous-coordinates-clip-space-ndc/
+
+![](/assets/pic/180043.png)
+
+### Eg. Depth intersection
+
+![](/assets/pic/182819.png)
+
+### Eg. Forcefield
+
+
+
 ## Misc
 
 - ###  Gray Scale for Metallic Texture: R or G or B is the same (choose any three of them)
@@ -465,4 +493,21 @@ eg. Curtain Effect
   ![](/assets/pic/214348.png)
 
   - additive:  add the pixel value for what's behind ->  especially for **transparent**: add black (0) -> show background color
+
+- ### [SmoothStep](https://docs.unity3d.com/Packages/com.unity.shadergraph@6.9/manual/Smoothstep-Node.html) & [Step](https://docs.unity3d.com/Packages/com.unity.shadergraph@6.9/manual/Step-Node.html)
+
+  ![](/assets/pic/183809.png)
+
+  ![](/assets/pic/183818.png)
+
+- ### [One Minus](https://docs.unity3d.com/Packages/com.unity.shadergraph@6.9/manual/One-Minus-Node.html): invert color for only gray scale image
+
+  ```
+  void Unity_OneMinus_float4(float4 In, out float4 Out)
+  {
+      Out = 1 - In;
+  }
+  ```
+
+  
 
