@@ -452,9 +452,58 @@ https://carmencincotti.com/2022-05-02/homogeneous-coordinates-clip-space-ndc/
 
 ![](/assets/pic/182819.png)
 
-### Eg. Forcefield
+### Eg. Forcefield - Fresnel
 
+![](/assets/pic/170009.png)
 
+### Eg. Water - Voronoi ripple
+
+![](/assets/pic/water.gif)
+
+## Tricks of Light
+
+### Eg1. Crystal Effect
+
+- Fresnel
+- UV -> smoothstep(division) -> lerp (mix and remap color)
+
+![](/assets/pic/185442.png)
+
+### Eg2. Holograms
+
+- Fresnel
+
+![](/assets/pic/203931.png)
+
+### Eg3. Refraction
+
+- doesn't work on Built-in: The executed HLSL code for this [Node](https://docs.unity3d.com/Packages/com.unity.shadergraph@6.9/manual/Node.html) is defined per **Render Pipeline**, and different **Render Pipelines** may produce different results
+
+![](/assets/pic/204604.png)
+
+- [Scene Color](https://docs.unity3d.com/Packages/com.unity.shadergraph@6.9/manual/Scene-Color-Node.html)
+- Normal Map -> **bend the light**
+
+![](/assets/pic/refraction926.gif)
+
+### Eg4. Iridesence
+
+- Gradient -> Fresnel
+
+![](/assets/pic/215226.png)
+
+## Advanced Water - wiz particle system
+
+- Depth: Scene Depth - Screen Position
+- Fresnel effect
+- Scrolling: Time node + tilling And offset
+- Refraction: Normal map + Screen Position -> Scene Color
+- Wave: Gradient Noise + Object Position -> Vertex Position
+- [vertex color](https://docs.unity3d.com/Packages/com.unity.shadergraph@6.9/manual/Vertex-Color-Node.html) : for change the **Color over Lifetime** attribute in **particle system**
+
+![](/assets/pic/wave926.gif)
+
+![](/assets/pic/advanced water.gif)
 
 ## Misc
 
