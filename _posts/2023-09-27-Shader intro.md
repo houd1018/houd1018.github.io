@@ -69,7 +69,7 @@ Shader "Holistic/HelloShader" {
 - *v · w* = *v*x*w*x + *v*y*w*y
 - a ^ = a/|a|
 - *v · w* = *v*x*w*x + *v*y*w*y
-- ![](\assets\pic\vector-maths-eq6.png.crdownload)
+- ![](/assets/pic/vector-maths-eq6.png)
 - [cross product] **v** x **w** = (vyw*z* - *vz wy* )(1, 0, 0) + (vzwx - *vxwz* )(0,1,0) + (v*x*wy - *vy*wx)(0,0,1)
 
 ## Shader Essentials & Surface Shader
