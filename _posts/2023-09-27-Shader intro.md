@@ -29,7 +29,7 @@ tags: [cg, unity, shader]    # TAG names should always be lowercase
 - Output is related to Lighting Model
   - ![](/assets/pic/090747.png)
 
-```shaderlab
+```cpp
 Shader "Holistic/HelloShader" {
 	
 	Properties {
@@ -67,8 +67,6 @@ Shader "Holistic/HelloShader" {
 ### Vector Recap
 
 - *v · w* = *v*x*w*x + *v*y*w*y
-- a ^ = a/|a|
-- *v · w* = *v*x*w*x + *v*y*w*y
 - ![](/assets/pic/vector-maths-eq6.png)
 - [cross product] **v** x **w** = (vyw*z* - *vz wy* )(1, 0, 0) + (vzwx - *vxwz* )(0,1,0) + (v*x*wy - *vy*wx)(0,0,1)
 
@@ -90,7 +88,7 @@ Shader "Holistic/HelloShader" {
 
 - fixed4 -> r,g,b,a or x,y,z,w
 
-  ````
+  ````c++
   colour1.a = 1;
   colour2.x = 0;
   ````
@@ -104,7 +102,7 @@ Shader "Holistic/HelloShader" {
 
 - copy with different length
 
-  ```
+  ```c
   fixed4 colour1 =(0,1,1,0);
   fixed3 colour3;
   colour3 = colour1.rgb;
@@ -116,14 +114,14 @@ Shader "Holistic/HelloShader" {
 
 - Swizzling: swapping channels
 
-  ```
+  ```c++
   fixed3 colour3;
   colour3 = colour1.bgr;
   ```
 
 - Smearing: Filling with same value using a single digit.
 
-```
+```c++
 // they are same
 fixed3 colour3 = 1;
 colour3 = (1, 1, 1);
@@ -131,7 +129,7 @@ colour3 = (1, 1, 1);
 
 - Masking
 
-  ```
+  ```c++
   colour1.rg = colour2.gr;
   ```
 
@@ -141,7 +139,7 @@ colour3 = (1, 1, 1);
 
 - Chaining
 
-```
+```c++
 fixed4 colour = matrix._m00_m01_m02_m03
 fixed4 colour = matrix[0];
 ```
@@ -156,7 +154,7 @@ fixed4 colour = matrix[0];
 
 #### Shader Input
 
-```
+```c++
 // The input struct in the shader code is where you declare any values from the mesh that you will need to manipulate in the shader function.
 			struct Input {
 				float2 uv_MainTex;
@@ -165,7 +163,7 @@ fixed4 colour = matrix[0];
 
 ####  Shader Properties
 
-```
+```c++
 Properties{
 _myColor ("Example Color", Color) = (1,1,1,1)
 _myRange("Example Range", Range(0,5))=1
@@ -190,14 +188,14 @@ float4 _myVector;
 
 - How the color of texture -> albedo
 
-```
+```c++
 tex2D(_myTex, IN.uv_myTex)
 ```
 
 - How to do refection skybox cube map
   - `float3 worldRefl` - contains world reflection vector *if surface shader does not write to o.Normal*. See Reflect-Diffuse shader for example.
 
-```
+```c++
         void surf (Input IN, inout SurfaceOutput o) {
             o.Albedo = (tex2D(_myTex, IN.uv_myTex) * _myRange).rgb;
             o.Emission = texCUBE (_myCube, IN.worldRefl).rgb;
