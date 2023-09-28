@@ -215,3 +215,29 @@ tex2D(_myTex, IN.uv_myTex)
 - Normalized
 
 ![](/assets/pic/173243.png)
+
+- z value is used to control brightness
+
+```c++
+        void surf (Input IN, inout SurfaceOutput o)
+        {
+            o.Albedo = tex2D(_myDiffuse, IN.uv_myDiffuse * _myScale).rgb;
+            o.Normal = UnpackNormal(tex2D(_myBump, IN.uv_myBump));
+			o.Normal *= float3 (_mySlider, _mySlider, 1);
+        }
+```
+
+![](/assets/pic/bump.gif)
+
+### Illumination Models
+
+- not geometric normal
+- pixel basis -> illumination model
+  - Flat
+    - only shade each polygon -> That gives the entire surface of a polygon the same color
+    - ![](/assets/pic/081501.png)
+  - Gouraud
+    - works ok until you add highly localized light in one polygon -> not transfer to others
+    - ![](/assets/pic/081524.png)
+  - Phong: Taking the actual normals at each vertex, the ones across the surface are calculated as an interpolation of one to another.
+    - ![](/assets/pic/081553.png)
