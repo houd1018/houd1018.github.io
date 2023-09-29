@@ -241,3 +241,25 @@ tex2D(_myTex, IN.uv_myTex)
     - ![](/assets/pic/081524.png)
   - Phong: Taking the actual normals at each vertex, the ones across the surface are calculated as an interpolation of one to another.
     - ![](/assets/pic/081553.png)
+
+**Switch From Phong -> Flat**
+
+![](/assets/pic/002610.png)
+
+- bumpMap + cubeMap -> world refection
+
+```c++
+        struct Input {
+            float2 uv_myDiffuse;
+            float2 uv_myBump;
+            float3 worldRefl; INTERNAL_DATA
+        };
+        
+        void surf (Input IN, inout SurfaceOutput o) {
+            o.Albedo = tex2D(_myDiffuse, IN.uv_myDiffuse).rgb;
+            o.Normal = UnpackNormal(tex2D(_myBump, IN.uv_myBump)) * _myBright;
+            o.Normal *= float3(_mySlider,_mySlider,1);
+            o.Emission = texCUBE (_myCube, WorldReflectionVector (IN, o.Normal)).rgb;
+        }
+```
+
