@@ -263,3 +263,52 @@ tex2D(_myTex, IN.uv_myTex)
         }
 ```
 
+-  reflective bump
+
+```c
+        void surf (Input IN, inout SurfaceOutput o) {
+            o.Normal = UnpackNormal(tex2D(_myBump, IN.uv_myBump)) * 0.3;
+            o.Albedo = texCUBE (_myCube, WorldReflectionVector (IN, o.Normal)).rgb;
+        }
+```
+
+### Buffer
+
+**Frame Buffer**: Computer memory structure that holds the color information about every pixel that appears on the screen.
+
+**Z Buffer**: the same dimensions as the frame buffer, but holds depth information for each pixel.
+
+Anything behind will be **ignored** & Render From **Front-to-Back**: If the pixel trying to be added has a smaller depth value than the one already in the Z buffer, it means that it must be closer to the camera and therefore its color should replace the one already in the pixel buffer and then its depth is added to the Z buffer.
+
+![](/assets/pic/090557.png)
+
+- Ignore depth / over-drawn
+
+  ```
+  SubShader {
+  
+    ZWrite off
+  
+    CGPROGRAM
+      #pragma surface surf Lambert
+    ENDCG
+  }
+  ```
+
+  ### Render Queues - Draw order
+
+![](/assets/pic/091341.png)
+
+### G buffer
+
+Deferred Rendering
+
+- good when there is a lot of light
+
+- cannot display transparent object (because transparent objects are see-through, they need to display any **lighting effects behind them** and because lights are calculated at the end)
+
+  ![](/assets/pic/092047.png)
+
+Forward Rendering [Default]
+
+![](/assets/pic/092146.png)
