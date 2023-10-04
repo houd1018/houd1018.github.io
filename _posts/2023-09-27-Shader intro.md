@@ -312,3 +312,59 @@ Deferred Rendering
 Forward Rendering [Default]
 
 ![](/assets/pic/092146.png)
+
+  ## Dot Product
+
+```c
+            struct Input{
+                float3 viewDir;
+            };
+
+            void surf (Input IN, inout SurfaceOutput o){
+                half dotp = dot(IN.viewDir, o.Normal);
+                o.Albedo = float3(dotp, 1, 1);
+                // shows blue on the round (0, 1, 1)
+                // white on the edge (1, 1, 1)
+            }
+```
+
+![](/assets/pic/165159.png)
+
+### Rim Lighting
+
+- Normalize
+- Saturate -> **-1 to 1** map to **0 to 1**
+- pow
+
+![](/assets/pic/174001.png)
+
+```c
+        void surf (Input IN, inout SurfaceOutput o)
+        {
+            half rim = 1 - saturate(dot(normalize(IN.viewDir), o.Normal));
+            o.Emission = _RimColor * pow(rim, _RimPower);
+        }
+```
+
+### Logical Cutoffs
+
+- Harsh Outline
+
+![](/assets/pic/181824.png)
+
+```c++
+        struct Input
+        {
+            float3 viewDir;
+        };
+
+        float4 _RimColor;
+        float _RimPower;
+
+        void surf (Input IN, inout SurfaceOutput o)
+        {
+            half rim = 1 - saturate(dot(normalize(IN.viewDir), o.Normal));
+            o.Emission = rim > 0.5 ? float3(1, 0, 0): rim > 0.3 ? float3(0, 1, 0): 0;
+        }
+```
+
