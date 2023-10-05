@@ -368,3 +368,30 @@ Forward Rendering [Default]
         }
 ```
 
+- WorldPos Cutline
+  - frac: give the fractional part = remainder
+  - x / 2 -> x * 0.5
+
+```c
+        void surf (Input IN, inout SurfaceOutput o)
+        {
+            o.Albedo = tex2D(_MainTex, IN.uv_MainTex).rgb;
+            half rim = 1 - saturate(dot(normalize(IN.viewDir), o.Normal));
+            o.Emission = frac(IN.worldPos.y * (20 - _StripeWidth) * 0.5) > 0.4 ? 
+                                float3(0, 1, 0) * rim : float3(1, 0, 0) * rim;
+        }
+```
+
+![](/assets/pic/131138.png)
+
+## Lighting
+
+[**[Specular Reflection]** Blinn-Phong](https://houd1018.github.io/posts/ShaderGraph-introTutorial/#specular-reflection---lambert--blinn-phong)
+
+[PBR](https://houd1018.github.io/posts/ShaderGraph-introTutorial/#physically-based-rendering)
+
+- vertex lighting [Gouraud]: calculated at each vertex  -> average across the surface
+- pixel lighting [Phong]: more detailed high light, but more processing 
+
+### Blinn-Phong
+
