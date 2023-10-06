@@ -395,3 +395,25 @@ Forward Rendering [Default]
 
 ### Blinn-Phong
 
+```c
+		CGPROGRAM
+		#pragma surface surf BlinnPhong
+
+		// _Spec is predefined in the Unity
+		float4 _Colour;
+		half _Spec;
+		fixed _Gloss;
+
+		struct Input {
+			float2 uv_MainTex;
+		};
+
+		void surf(Input IN, inout SurfaceOutput o) {
+			o.Albedo = _Colour.rgb;
+			o.Specular = _Spec;
+			o.Gloss = _Gloss;
+		}
+		ENDCG
+```
+
+![](/assets/pic/233840.png)
