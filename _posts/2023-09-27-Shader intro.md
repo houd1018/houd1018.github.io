@@ -419,3 +419,29 @@ Forward Rendering [Default]
 ![](/assets/pic/233840.png)
 
 ### Physically Based Rendering
+
+```c++
+	SubShader{
+		Tags{
+			"Queue" = "Geometry"
+		}
+
+		CGPROGRAM
+		#pragma surface surf StandardSpecular
+
+        sampler2D _MetallicTex;
+        fixed4 _Color;
+
+		struct Input {
+			float2 uv_MetallicTex;
+		};
+
+		void surf(Input IN, inout SurfaceOutputStandardSpecular o) {
+            o.Albedo = _Color.rgb;
+            o.Smoothness = tex2D (_MetallicTex, IN.uv_MetallicTex).r;
+            o.Specular = _SpecColor.rgb;
+		}
+		ENDCG
+	}
+```
+
