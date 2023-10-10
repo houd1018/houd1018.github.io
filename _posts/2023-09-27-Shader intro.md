@@ -445,3 +445,75 @@ Forward Rendering [Default]
 	}
 ```
 
+### Custom Lighting Model
+
+#### CustomLambert
+
+```c
+        half4 LightingBasicLambert (SurfaceOutput s, half3 lightDir, half atten) {
+              half NdotL = dot (s.Normal, lightDir);
+              half4 c;
+              c.rgb = s.Albedo * _LightColor0.rgb * (NdotL * atten);
+              c.a = s.Alpha;
+              return c;
+          }
+```
+
+#### CustomBlinn
+
+```c++
+	   #pragma surface surf BasicBlinn
+// has the same heading "Lighting"
+	    half4 LightingBasicBlinn (SurfaceOutput s, half3 lightDir, half3 viewDir, half atten) {
+            // format for the parameter in this function
+	        half3 h = normalize (lightDir + viewDir);
+
+	        half diff = max (0, dot (s.Normal, lightDir));
+
+	        float nh = max (0, dot (s.Normal, h));
+	        float spec = pow (nh, 48.0);
+
+	        half4 c;
+	        c.rgb = (s.Albedo * _LightColor0.rgb * diff + _LightColor0.rgb * spec) * atten;
+	        c.a = s.Alpha;
+	        return c;
+	    }
+```
+
+#### ToonRamp - Ramp Texture
+
+```c++
+		#pragma surface surf ToonRamp
+
+		float4 _Color;
+		sampler2D _RampTex;
+		
+		float4 LightingToonRamp (SurfaceOutput s, fixed3 lightDir, fixed atten)
+		{
+			float diff = dot (s.Normal, lightDir);
+			float h = diff * 0.5 + 0.5;
+			float2 rh = h;
+			float3 ramp = tex2D(_RampTex, rh).rgb;
+			
+			float4 c;
+			c.rgb = s.Albedo * _LightColor0.rgb * (ramp);
+			c.a = s.Alpha;
+			return c;
+		}
+```
+
+![](/assets/pic/134007.png)
+
+## Misc
+
+### 	_SinTime
+
+[Built-in shader variables](https://docs.unity3d.com/Manual/SL-UnityShaderVariables.html)
+
+In this case the **_SinTime** returns 4 values that change overtime
+
+```c++
+c.rgb = (s.Albedo * _LightColor0.rgb * diff + _LightColor0.rgb * spec) * atten * _SinTime;
+```
+
+![](/assets/pic/sin.gif)
