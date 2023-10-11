@@ -504,7 +504,166 @@ Forward Rendering [Default]
 
 ![](/assets/pic/134007.png)
 
-## Pass
+## Pass & Blend
+
+### Alpha - Transparent
+
+["Queue" = "Transparent" -> Z-Buffer -> Transparent](https://houd1018.github.io/posts/Shader-intro/#buffer)
+
+```c++
+	SubShader{
+		Tags{
+			"Queue" = "Transparent"
+		}
+		// since the z buffer is 0, make sure set the render queue
+
+		CGPROGRAM
+            //setting the "alpha:fade"
+		#pragma surface surf Lambert alpha:fade
+
+		sampler2D _MainTex;
+
+		struct Input {
+			float2 uv_MainTex;
+		};
+
+		void surf(Input IN, inout SurfaceOutput o) {
+			fixed4 c = tex2D(_MainTex, IN.uv_MainTex);
+			o.Albedo = c.rgb;
+			o.Alpha = c.a;
+		}
+		ENDCG
+	}
+```
+
+![](/assets/pic/110730.png)
+
+### Holograms - Pass
+
+- **Pass Definition**: `Pass { . }` defines a block of code that represents a rendering pass within a shader. A pass encapsulates a set of rendering operations that should be performed together during a single rendering cycle.
+
+- **Multiple Passes**: Shader programs can have multiple passes, and each pass can have its own unique set of rendering operations. For example, you might have one pass for rendering the basic color of an object and another pass for applying a reflection effect.
+
+```c++
+    SubShader
+    {
+        Tags{"Queue" = "Transparent"}
+
+       Pass{
+            //Zbuffer on, but do not write color info
+           ZWrite On
+           ColorMask 0
+        }
+
+        CGPROGRAM
+        #pragma surface surf Lambert alpha:fade
+       
+        struct Input
+        {
+            float3 viewDir;
+        };
+
+        float4 _RimColor;
+        float _RimPower;
+
+        void surf (Input IN, inout SurfaceOutput o)
+        {
+            half rim = 1 - saturate(dot(normalize(IN.viewDir), o.Normal));
+            o.Emission = _RimColor.rgb * pow(rim, _RimPower) * 10;
+            // same as RimLight
+            o.Alpha = pow(rim, _RimPower);
+        }
+        ENDCG
+    }
+```
+
+![](/assets/pic/123822.png)
+
+![](/assets/pic/123851.png)
+
+### Blend
+
+![](/assets/pic/130031.png)
+
+**SrcFactor**: taking the color that's on the texture and multiplying it by 1 
+
+**DestFactor**: and then it's also getting the color already in the frame buffer (whatever is behind this quad)
+
+**add -> brighter**
+
+```c++
+Shader "Custom/BlendTest"
+{
+    Properties
+    {
+        _MainTex ("Texture", 2D) = "black" {}
+    }
+    SubShader
+    {
+        Tags { "RenderType"="Transparent" }
+        Blend One One
+        Pass{
+            SetTexture [_MainTex] {combine texture}
+        }
+    }
+    FallBack "Diffuse"
+}
+```
+
+```c++
+        Blend SrcAlpha OneMinusSrcAlpha
+```
+
+### Cull - back face
+
+```c
+    SubShader
+    {
+        Tags { "RenderType"="Transparent" }
+        Blend SrcAlpha OneMinusSrcAlpha
+        // Default "Cull back"
+        Cull Off
+        Pass{
+            SetTexture [_MainTex] {combine texture}
+        }
+    }
+```
+
+### Blender two image
+
+```c++
+Shader "Holistic/BasicTextureBlend" {
+Properties{
+		_MainTex ("MainTex", 2D) = "white" {}
+		_DecalTex ("Decal", 2D) = "white" {}
+		[Toggle] _ShowDecal("Show Decal?", Float) = 0
+	}
+	SubShader{
+		Tags{
+			"Queue" = "Geometry"
+		}
+
+		CGPROGRAM
+		#pragma surface surf Lambert
+
+		sampler2D _MainTex;
+		sampler2D _DecalTex;
+		float _ShowDecal;
+
+		struct Input {
+			float2 uv_MainTex;
+		};
+
+		void surf(Input IN, inout SurfaceOutput o) {
+			fixed4 a = tex2D(_MainTex, IN.uv_MainTex);
+			fixed4 b = tex2D(_DecalTex, IN.uv_MainTex) * _ShowDecal;
+			o.Albedo = b.r > 0.9 ? b.rgb: a.rgb;
+		}
+		ENDCG
+	}
+	FallBack "Diffuse"
+}
+```
 
 
 
