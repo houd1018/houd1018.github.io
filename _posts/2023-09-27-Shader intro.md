@@ -665,7 +665,9 @@ Properties{
 }
 ```
 
+### Stencil Buffer
 
+![](/assets/pic/142241.png)
 
 ## Misc
 
