@@ -669,6 +669,124 @@ Properties{
 
 ![](/assets/pic/142241.png)
 
+![](/assets/pic/222548.png)
+
+**Wall (be seen through)**
+
+```c++
+		Stencil
+		{
+			Ref 1
+			Comp notequal
+			Pass keep
+		}
+```
+
+**Hole (see-through glass)**
+
+```c++
+		Tags { "Queue"="Geometry-1" }
+
+		ColorMask 0
+		ZWrite off
+		Stencil
+		{
+			Ref 1
+			Comp always
+			Pass replace
+		}
+```
+
+**Select Function in Inspector**
+
+```c++
+	Properties
+	{
+		_Color("Main Color", Color) = (1,1,1,1)
+
+		_SRef("Stencil Ref", Float) = 1
+		[Enum(UnityEngine.Rendering.CompareFunction)]	_SComp("Stencil Comp", Float)	= 8
+		[Enum(UnityEngine.Rendering.StencilOp)]	_SOp("Stencil Op", Float)		= 2
+	}
+			Stencil
+		{
+			Ref[_SRef]
+			Comp[_SComp]	
+			Pass[_SOp]	
+		}
+```
+
+![](/assets/pic/222046.png)
+
+![](/assets/pic/magicbox.gif)
+
+## Vertex & Fragment
+
+![](/assets/pic/224309.png)
+
+![](/assets/pic/230236.png)
+
+**Basic Structure**
+
+```c++
+Shader "Unlit/ColorVF"
+{
+    Properties
+    {
+        _MainTex ("Texture", 2D) = "white" {}
+    }
+    SubShader
+    {
+        Tags { "RenderType"="Opaque" }
+        LOD 100
+
+        Pass
+        {
+            CGPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+
+            #include "UnityCG.cginc"
+
+            struct appdata
+            {
+                float4 vertex : POSITION;
+            };
+
+            struct v2f
+            {
+                // vertex value from world space -> clipping space
+                float4 vertex : SV_POSITION;
+                float4 color : COLOR;
+            };
+
+            sampler2D _MainTex;
+            float4 _MainTex_ST;
+
+            v2f vert (appdata v)
+            {
+                v2f o;
+                o.vertex = UnityObjectToClipPos(v.vertex);
+                return o;
+            }
+
+            // vert -> return 0
+            // o -> i > frag (can't see)
+
+            fixed4 frag (v2f i) : SV_Target
+            {
+                // sample the texture
+                fixed4 col = fixed4(0, 1, 0, 1);
+                return col;
+            }
+            ENDCG
+        }
+    }
+}
+```
+
+
+
 ## Misc
 
 ### 	_SinTime
