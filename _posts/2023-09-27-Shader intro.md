@@ -785,6 +785,568 @@ Shader "Unlit/ColorVF"
 }
 ```
 
+### Material
+
+- Ripple UV
+- GrabPass [Mirror effect] [capture the screen]
+
+```c
+SubShader
+{
+	Tags{ "Queue" = "Transparent"}
+	// draw last -> avoid mirror inside the mirror
+	GrabPass{}
+	Pass
+	{
+		CGPROGRAM
+		#pragma vertex vert
+		#pragma fragment frag
+		
+		#include "UnityCG.cginc"
+
+		struct appdata
+		{
+			float4 vertex : POSITION;
+			float2 uv : TEXCOORD0;
+		};
+
+		struct v2f
+		{
+			float2 uv : TEXCOORD0;
+			float4 vertex : SV_POSITION;
+		};
+
+		sampler2D _GrabTexture;
+		sampler2D _MainTex;
+		float4 _MainTex_ST;
+		float _ScaleUVX;
+		float _ScaleUVY;
+		
+		v2f vert (appdata v)
+		{
+			v2f o;
+			o.vertex = UnityObjectToClipPos(v.vertex);
+			o.uv = TRANSFORM_TEX(v.uv, _MainTex);
+			o.uv.x = sin(o.uv.x * _ScaleUVX);
+			o.uv.y = sin(o.uv.y * _ScaleUVY);
+			return o;
+		}
+		
+		fixed4 frag (v2f i) : SV_Target
+		{
+			fixed4 col = tex2D(_GrabTexture, i.uv);
+			return col;
+		}
+		ENDCG
+	}
+```
+
+![](/assets/pic/123852.png)
+
+### Lighting
+
+```c++
+    SubShader
+    {
+        Pass
+        {
+            Tags {"LightMode"="ForwardBase"}
+            // calculate lighting at the beginning
+            // not deferred Lighting
+        
+            CGPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            #include "UnityCG.cginc" 
+            #include "UnityLightingCommon.cginc" 
+	
+			struct appdata {
+			    float4 vertex : POSITION;
+			    float3 normal : NORMAL;
+			    float4 texcoord : TEXCOORD0;
+			};
+
+            struct v2f
+            {
+                float2 uv : TEXCOORD0;
+                fixed4 diff : COLOR0; 
+                float4 vertex : SV_POSITION;
+            };
+
+            v2f vert (appdata v)
+            {
+                v2f o;
+                o.vertex = UnityObjectToClipPos(v.vertex);
+                o.uv = v.texcoord;
+
+                // convert normal in the mesh(local space) to world space
+                // To compare the noraml with lighting(in world space)
+                half3 worldNormal = UnityObjectToWorldNormal(v.normal);
+
+                // Lambert -> dot product
+                half nl = max(0, dot(worldNormal, _WorldSpaceLightPos0.xyz));
+                o.diff = nl * _LightColor0;
+                return o;
+            }
+            
+            sampler2D _MainTex;
+
+            fixed4 frag (v2f i) : SV_Target
+            {
+                fixed4 col = tex2D(_MainTex, i.uv);
+                col *= i.diff;
+                return col;
+            }
+            ENDCG
+        }
+```
+
+### Shadow
+
+- one more draw call
+
+  ```c
+  Pass
+  {
+      Tags {"LightMode"="ShadowCaster"}
+  
+      CGPROGRAM
+      #pragma vertex vert
+      #pragma fragment frag
+      #pragma multi_compile_shadowcaster
+      #include "UnityCG.cginc"
+      
+      struct appdata {
+          float4 vertex : POSITION;
+          float3 normal : NORMAL;
+          float4 texcoord : TEXCOORD0;
+      };
+  
+      struct v2f { 
+          // take vertex position and normal
+          V2F_SHADOW_CASTER;
+      };
+  
+      v2f vert(appdata v)
+      {
+          v2f o;
+          
+          // create the shadow data
+          TRANSFER_SHADOW_CASTER_NORMALOFFSET(o)
+          return o;
+      }
+  
+      float4 frag(v2f i) : SV_Target
+      {
+          // spit out the shadow color
+          SHADOW_CASTER_FRAGMENT(i)
+      }
+      ENDCG
+  }
+  ```
+
+- accept shadow
+
+  ```c
+  Pass
+  {
+      Tags {"LightMode"="ForwardBase"}
+      // calculate lighting at the beginning
+      // not deferred Lighting
+  
+      CGPROGRAM
+      #pragma vertex vert
+      #pragma fragment frag
+  
+      // ignore stuff to show shadow
+      #pragma multi_compile_fwdbase nolightmap nodirlightmap nodynlightmap novertexlight
+      #include "UnityCG.cginc" 
+      #include "UnityLightingCommon.cginc"
+      #include "Lighting.cginc" 
+      #include "AutoLight.cginc"
+  
+  	struct appdata {
+  	    float4 vertex : POSITION;
+  	    float3 normal : NORMAL;
+  	    float4 texcoord : TEXCOORD0;
+  	};
+  
+      struct v2f
+      {
+          float2 uv : TEXCOORD0;
+          fixed4 diff : COLOR0; 
+  
+          // TRANSFER_SHADOW is looking for "pos"
+          float4 pos : SV_POSITION;
+          SHADOW_COORDS(1)
+      };
+  
+      v2f vert (appdata v)
+      {
+          v2f o;
+          o.pos = UnityObjectToClipPos(v.vertex);
+          o.uv = v.texcoord;
+  
+          // convert normal in the mesh(local space) to world space
+          // To compare the noraml with lighting(in world space)
+          half3 worldNormal = UnityObjectToWorldNormal(v.normal);
+  
+          // Lambert -> dot product
+          half nl = max(0, dot(worldNormal, _WorldSpaceLightPos0.xyz));
+          o.diff = nl * _LightColor0;
+          
+          // shadow(world space) -> v2f
+          TRANSFER_SHADOW(o)
+          return o;
+      }
+      
+      sampler2D _MainTex;
+  
+      fixed4 frag (v2f i) : SV_Target
+      {
+          fixed4 col = tex2D(_MainTex, i.uv);
+  
+          // calculate the shadow
+          fixed shadow = SHADOW_ATTENUATION(i);
+          col.rgb *= i.diff * shadow;
+          return col;
+      }
+      ENDCG
+  }
+  ```
+
+  ![](/assets/pic/193239.png)
+
+## Effect Examples
+
+### Vertex Extruding
+
+-  use the vertex shader inside the code with a surface shader --> no need to write the lighting / shadow from vertex shader
+
+- inout: indicates that the parameter can be both an input (read-only) and an output (writable) parameter. In this case, `appdata v` is both provided as input data for the function, and the function is allowed to modify it to change the vertex position.
+
+  ```c
+      SubShader {
+  
+        CGPROGRAM
+  		  // declear using vertex in the surface shader
+  	      #pragma surface surf Lambert vertex:vert
+  	      
+  
+  		  // --------- vertex part -----------
+  	      struct appdata {
+  	      	float4 vertex: POSITION;
+  	      	float3 normal: NORMAL;
+  	      	float4 texcoord: TEXCOORD0;
+  	      };
+  
+  	      float _Amount;
+  
+  		  // inout:  the function is allowed to modify it to change the vertex position
+  	      void vert (inout appdata v) {
+  	          v.vertex.xyz += v.normal * _Amount;
+  	      }
+  
+  	      sampler2D _MainTex;
+  		  
+  		  // ---------- surface part--------
+  	      struct Input {
+  	          float2 uv_MainTex;
+  	      };
+  
+  	      void surf (Input IN, inout SurfaceOutput o) {
+  	          o.Albedo = tex2D (_MainTex, IN.uv_MainTex).rgb;
+  	      }
+  
+        ENDCG
+      } 
+  ```
+
+  ![](/assets/pic/extrude.gif)
+
+### Outlining
+
+#### Simple Outline
+
+```c++
+   SubShader {
+	  Tags { "Queue"="Transparent" } // make it on top of everything
+   	  ZWrite off // to overlay the orginal vertex
+      CGPROGRAM
+	      #pragma surface surf Lambert vertex:vert
+	      struct Input {
+	          float2 uv_MainTex;
+	      };
+	      float _Outline;
+	      float4 _OutlineColor;
+	      void vert (inout appdata_full v) {
+	          v.vertex.xyz += v.normal * _Outline;
+	      }
+	      sampler2D _MainTex;
+	      void surf (Input IN, inout SurfaceOutput o) 
+	      {
+	          o.Emission = _OutlineColor.rgb;
+	      }
+      ENDCG
+	  // --------- draw the mainTex ------------
+      ZWrite on
+
+      CGPROGRAM
+	      #pragma surface surf Lambert
+	      struct Input {
+	          float2 uv_MainTex;
+	      };
+
+	      sampler2D _MainTex;
+	      void surf (Input IN, inout SurfaceOutput o) {
+	          o.Albedo = tex2D (_MainTex, IN.uv_MainTex).rgb;
+	      }
+      ENDCG
+    } 
+```
+
+#### Advanced Outline - Geometry
+
+```c++
+v2f vert(appdata v) {
+    v2f o;
+    o.pos = UnityObjectToClipPos(v.vertex);
+
+    /* the normal vector (v.normal) of the vertex is transformed from object space to view space 
+    by multiplying it with the inverse transpose of the Model-View matrix */
+    float3 norm   = normalize(mul ((float3x3)UNITY_MATRIX_IT_MV, v.normal));
+
+    // 2D offset -> transforms the x and y components of the normalized normal vector into screen space
+    float2 offset = TransformViewToProjection(norm.xy);
+
+    // on Geometry, not vertex position
+    o.pos.xy += offset * o.pos.z * _Outline;
+    o.color = _OutlineColor;
+    return o;
+}
+```
+
+![](/assets/pic/224201.png)
+
+### Glass - GrabPass
+
+- GrabPass{}: get `sampler2D _GrabTexture`
+- bump map -> distort
+- MainTex -> mirror texture (like blend)
+- UnpackNormal: Vector4 -> Vector3
+- [Accessing shader properties in Cg/HLSL](https://docs.unity3d.com/Manual/SL-PropertiesInPrograms.html)
+
+```c++
+Shader "Holistic/Glass"
+{
+	Properties
+	{
+		_MainTex ("Texture", 2D) = "white" {}
+		_BumpMap ("Normalmap", 2D) = "bump" {}
+		_ScaleUV ("Scale", Range(1,5000)) = 1
+	}
+	SubShader
+	{
+		Tags{ "Queue" = "Transparent"}
+		GrabPass{}
+		Pass
+		{
+			CGPROGRAM
+			#pragma vertex vert
+			#pragma fragment frag
+			
+			#include "UnityCG.cginc"
+
+			struct appdata
+			{
+				float4 vertex : POSITION;
+				float4 uv : TEXCOORD0;
+			};
+
+			struct v2f
+			{
+				float2 uv : TEXCOORD0;
+				float4 uvgrab : TEXCOORD1;
+				float2 uvbump : TEXCOORD2;
+				float4 vertex : SV_POSITION;
+			};
+
+			sampler2D _GrabTexture; // captured using the GrabPass{} block
+			float4 _GrabTexture_TexelSize;
+			sampler2D _MainTex;
+			float4 _MainTex_ST;
+			sampler2D _BumpMap;
+			float4 _BumpMap_ST;
+			float _ScaleUV;
+			
+			v2f vert (appdata v)
+			{
+				v2f o;
+				o.vertex = UnityObjectToClipPos(v.vertex);
+                
+                //add this to check if the image needs flipping
+				# if UNITY_UV_STARTS_AT_TOP
+                float scale = -1.0;
+                # else
+                float scale = 1.0f;
+                # endif
+
+				/*basing on where it positions itself within the screen space, 
+				it calculates what the UVs would be 
+				(or the equivalent UVs required) for our grab texture */
+
+				/* 0.5  texture coordinates -> normalized texture space: 
+				The entire expression is multiplied by 0.5 at the end. 
+				This is used to map the calculated coordinates to a normalized texture space, 
+				where both the horizontal and vertical components range from 0 to 1. */
+
+                //include scale in this formulae as below
+                o.uvgrab.xy = (float2(o.vertex.x, o.vertex.y * scale) + o.vertex.w) * 0.5;
+				
+                o.uvgrab.zw = o.vertex.zw;
+				o.uv = TRANSFORM_TEX( v.uv, _MainTex );
+				o.uvbump = TRANSFORM_TEX( v.uv, _BumpMap );
+				return o;
+			}
+			
+			fixed4 frag (v2f i) : SV_Target
+			{
+				// add distortion
+				half2 bump = UnpackNormal(tex2D( _BumpMap, i.uvbump )).rg; 
+				float2 offset = bump * _ScaleUV * _GrabTexture_TexelSize.xy;
+				i.uvgrab.xy = offset * i.uvgrab.z + i.uvgrab.xy;
+				
+				// show mirror texture
+				fixed4 col = tex2Dproj( _GrabTexture, UNITY_PROJ_COORD(i.uvgrab));
+				fixed4 tint = tex2D(_MainTex, i.uv);
+				col *= tint;
+				return col;
+			}
+			ENDCG
+		}
+	}
+}
+```
+
+![](/assets/pic/distortGlass.gif)
+
+### Wave
+
+- `void vert (inout appdata v, out Input o)`
+
+- `_Time`
+
+- Surface shader `struct Input`: ` float3 vertColor;` & `float2 uv_MainTex;` 
+
+  ```c++
+  Shader "Holistic/Waves" {
+      Properties {
+        _MainTex("Diffuse", 2D) = "white" {}
+        _Tint("Colour Tint", Color) = (1,1,1,1)
+        _Freq("Frequency", Range(0,5)) = 3
+        _Speed("Speed",Range(0,100)) = 10
+        _Amp("Amplitude",Range(0,1)) = 0.5
+      }
+      SubShader {
+        CGPROGRAM
+        #pragma surface surf Lambert vertex:vert 
+        
+        struct Input {
+            float2 uv_MainTex;
+            float3 vertColor;
+        };
+        
+        float4 _Tint;
+        float _Freq;
+        float _Speed;
+        float _Amp;
+  
+        struct appdata {
+            float4 vertex: POSITION;
+            float3 normal: NORMAL;
+            float4 texcoord: TEXCOORD0;
+            float4 texcoord1: TEXCOORD1;
+            float4 texcoord2: TEXCOORD2;
+        };
+        
+        // changes appdata and Input value (modify vertex color)
+        void vert (inout appdata v, out Input o) {
+          // HLSL compiler
+            UNITY_INITIALIZE_OUTPUT(Input,o);
+            float t = _Time * _Speed;
+  
+            // height value for vertex
+            float waveHeight = sin(t + v.vertex.x * _Freq) * _Amp + 
+                          sin(t*2 + v.vertex.x * _Freq*2) * _Amp;
+            v.vertex.y = v.vertex.y + waveHeight;
+            v.normal = normalize(float3(v.normal.x + waveHeight, v.normal.y, v.normal.z));
+            
+            
+            // trough darker in the bottom
+            // peak lighter in the top
+            o.vertColor = waveHeight + 2; 
+  
+        }
+  
+        sampler2D _MainTex;
+        void surf (Input IN, inout SurfaceOutput o) {
+            float4 c = tex2D(_MainTex, IN.uv_MainTex);
+            o.Albedo = c * IN.vertColor.rgb; // add vertex color
+        }
+        ENDCG
+  
+      } 
+      Fallback "Diffuse"
+    }
+  ```
+
+  ![](/assets/pic/Wave.gif)
+
+### Scrolling Texture
+
+```c++
+void surf (Input IN, inout SurfaceOutput o) {
+    _ScrollX *= _Time;
+    _ScrollY *= _Time;
+    float3 water = (tex2D (_MainTex, IN.uv_MainTex + float2(_ScrollX, _ScrollY))).rgb;
+    float3 foam = (tex2D (_FoamTex, IN.uv_MainTex + float2(_ScrollX/2.0, _ScrollY/2.0))).rgb;
+    o.Albedo = (water + foam)/2.0;
+
+}
+```
+
+![](/assets/pic/scorll.gif)
+
+### Plasma
+
+```c++
+void surf (Input IN, inout SurfaceOutput o) {
+  const float PI = 3.14159265;
+  float t = _Time.x * _Speed;
+
+  //vertical
+  float c = sin(IN.worldPos.x * _Scale1 + t);
+
+  //horizontal
+  c += sin(IN.worldPos.z * _Scale2 + t);
+
+  //diagonal
+  c += sin(_Scale3*(IN.worldPos.x*sin(t/2.0) + IN.worldPos.z*cos(t/3))+t);
+
+  //circular
+  float c1 = pow(IN.worldPos.x + 0.5 * sin(t/5),2);
+  float c2 = pow(IN.worldPos.z + 0.5 * cos(t/3),2);
+  c += sin(sqrt(_Scale4*(c1 + c2)+1+t));
+
+  o.Albedo.r = sin(c/4.0*PI);
+  o.Albedo.g = sin(c/4.0*PI + 2*PI/4);
+  o.Albedo.b = sin(c/4.0*PI + 4*PI/4);
+  o.Albedo *= _Tint;
+}
+```
+
+![](/assets/pic/plasma.gif)
+
 
 
 ## Misc
@@ -800,3 +1362,162 @@ c.rgb = (s.Albedo * _LightColor0.rgb * diff + _LightColor0.rgb * spec) * atten *
 ```
 
 ![](/assets/pic/sin.gif)
+
+### [Concise Cg built-in function table](https://www.sjbaker.org/wiki/index.php?title=Concise_Cg_built-in_function_table)
+
+### **Shader Cheat Sheet**
+
+#### Lambert and BlinnPhong
+
+```c++
+struct SurfaceOutput
+{
+    fixed3 Albedo;  // diffuse color
+    fixed3 Normal;  // tangent space normal, if written
+    fixed3 Emission;
+    half Specular;  // specular power in 01 range
+    fixed Gloss;    // specular intensity
+    fixed Alpha;    // alpha for transparencies
+};
+```
+
+#### Standard
+
+```c++
+struct SurfaceOutputStandard
+{
+    fixed3 Albedo;      // base (diffuse or specular) color
+    fixed3 Normal;      // tangent space normal, if written
+    half3 Emission;
+    half Metallic;      // 0=non-metal, 1=metal
+    half Smoothness;    // 0=rough, 1=smooth
+    half Occlusion;     // occlusion (default 1)
+    fixed Alpha;        // alpha for transparencies
+};
+```
+
+#### Standard Specular
+
+```c++
+struct SurfaceOutputStandardSpecular
+{
+    fixed3 Albedo;      // diffuse color
+    fixed3 Specular;    // specular color
+    fixed3 Normal;      // tangent space normal, if written
+    half3 Emission;
+    half Smoothness;    // 0=rough, 1=smooth
+    half Occlusion;     // occlusion (default 1)
+    fixed Alpha;        // alpha for transparencies
+};
+```
+
+#### Vertex/Fragment Structures
+
+##### **AppData**
+
+```c++
+struct appdata_full {
+    float4 vertex : POSITION;       //vertex xyz position
+    float4 tangent : TANGENT; 
+    float3 normal : NORMAL;
+    float4 texcoord : TEXCOORD0;    //uv coordinate for first set of UVs
+    float4 texcoord1 : TEXCOORD1;   //uv coordinate for second set of UVs
+    float4 texcoord2 : TEXCOORD2;   //uv coordinate for third set of UVs
+    float4 texcoord3 : TEXCOORD3;   //uv coordinate for fourth set of UVs
+    fixed4 color : COLOR;           //per-vertex colour
+};
+struct v2f
+{
+    float4 pos :  SV_POSITION;      //The position of the vertex in clipping space.
+    float3 normal : NORMAL;         //The normal of the vertex in clipping space.
+    float4 uv : TEXCOORD0;          //UV from first UV set.
+    float4 textcoord1 : TEXCOORD1;  //UV from second UV set.
+    float4 tangent : TANGENT;       //A vector that runs at right angles to a normal.
+    float4 diff : COLOR0;           //Diffuse vertex colour.
+    float4 spec : COLOR1;           //Specular vertex colour.
+}
+```
+
+##### Multipass Shader Format
+
+```c++
+Shader "MultipassShader"
+{
+    Properties    //PROPERTIES BLOCK
+    {
+        _Color ("Main Color", Color) = (1,1,1,1)
+        _MainTex ("Base (RGB)", 2D) = "white" {}
+    }
+   
+    SubShader    //ENCLOSING SHADER BLOCK
+    {                            
+        //FIRST PASS - SURFACE SHADER DOES NOT REQUIRE PASS BLOCK
+        Tags { "Queue" = "Geometry+1" }
+ 
+        CGPROGRAM
+        #pragma surface surf BlinnPhong 
+       
+        float4 _Color;
+        struct Input
+        {
+        };
+       
+        void surf (Input IN, inout SurfaceOutput o)
+        {
+        }
+        ENDCG
+ 
+        //SECOND PASS - ANOTHER SURFACE SHADER, NO PASS BLOCK REQUIRED
+        ZWrite Off      
+        Blend DstColor Zero
+        CGPROGRAM
+        #pragma surface surf BlinnPhong
+        float4 _Color;
+        struct Input
+        {
+        };
+     
+        void surf (Input IN, inout SurfaceOutput o)
+        {
+        }
+        ENDCG  
+ 
+        //THIRD PASS -  VERT/FRAG NEEDS TO BE ENCLOSED IN PASS
+        Pass
+        {
+            Tags { "LightMode" = "Always" }
+            ZWrite Off
+            CGPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            #include "UnityCG.cginc"
+            sampler2D _MainTex;
+         
+            struct v2f
+            {
+            };
+            v2f vert (appdata_full v)
+            {
+            }
+                        
+            half4 frag( v2f i ) : COLOR
+            {
+            }
+            ENDCG          
+        }
+       
+        //FOURTH PASS - SIMPLE SHADER LAB FUNCTIONS
+        Pass
+        {          
+            Tags { "LightMode" = "Always" }
+            ZWrite Off
+            SetTexture [_MainTex]
+            {
+                 combine constant* texture
+            }
+        } 
+    }
+    Fallback "Diffuse
+ 
+}
+```
