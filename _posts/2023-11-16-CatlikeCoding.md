@@ -44,3 +44,228 @@ i.uv = v.uv * _MainTex_ST.xy + _MainTex_ST.zw;
 // uv here is the uv from the mesh
 ```
 
+## Combine Texture
+
+```c++
+Shader "Custom/Texture Splatting" {
+
+    Properties {
+        _MainTex ("Splat Map", 2D) = "white" {}
+        [NoScaleOffset] _Texture1 ("Texture 1", 2D) = "white" {}
+        [NoScaleOffset] _Texture2 ("Texture 2", 2D) = "white" {}
+        [NoScaleOffset] _Texture3 ("Texture 3", 2D) = "white" {}
+        [NoScaleOffset] _Texture4 ("Texture 4", 2D) = "white" {}
+    }
+
+    SubShader {
+
+        Pass {
+            CGPROGRAM
+
+            #pragma vertex MyVertexProgram
+            #pragma fragment MyFragmentProgram
+
+            #include "UnityCG.cginc"
+
+            sampler2D _MainTex;
+            float4 _MainTex_ST;
+            sampler2D _Texture1, _Texture2, _Texture3, _Texture4;
+            
+            struct VertexData {
+                float4 position : POSITION;
+                float2 uv : TEXCOORD0;
+            };
+
+            struct Interpolators {
+                float4 position : SV_POSITION;
+                float2 uv : TEXCOORD0;
+                float2 uvSplat : TEXCOORD1;
+            };
+
+            Interpolators MyVertexProgram (VertexData v) {
+                Interpolators i;
+                i.position = UnityObjectToClipPos(v.position);
+                i.uv = TRANSFORM_TEX(v.uv, _MainTex);
+                i.uvSplat = v.uv;
+                return i;
+            }
+
+            float4 MyFragmentProgram (Interpolators i) : SV_TARGET {
+                float4 splat = tex2D(_MainTex, i.uvSplat);
+                return
+                tex2D(_Texture1, i.uv) * splat.r +
+                tex2D(_Texture2, i.uv) * splat.g +
+                tex2D(_Texture3, i.uv) * splat.b +
+                tex2D(_Texture4, i.uv) * (1 - splat.r - splat.g - splat.b);
+            }
+
+            ENDCG
+        }
+    }
+}
+```
+
+## Light
+
+### Diffuse
+
+``#include "UnityStandardBRDF.cginc"``: defines the convenient `DotClamped` function, It contains a lot of other lighting function
+
+![](../assets/pic/include-files.png)
+
+`float4 _WorldSpaceLightPos0`: It has four components, because these are homogeneous coordinates. So the fourth component is 0 for our directional light.
+
+`fixed4 _LightColor0`: This variable contains the light's color, multiplied by its intensity. Although it provides all four channels, we only need the RGB components.
+
+```c++
+Tags {
+    "LightMode" = "ForwardBase"
+}
+...
+
+float4 MyFragmentProgram (Interpolators i) : SV_TARGET {
+    i.normal = normalize(i.normal);
+    float3 lightDir = _WorldSpaceLightPos0.xyz;
+    float3 lightColor = _LightColor0.rgb;
+    float3 albedo = tex2D(_MainTex, i.uv).rgb * _Tint.rgb;
+    float3 diffuse =
+        albedo * lightColor * DotClamped(lightDir, i.normal);
+    return float4(diffuse, 1);
+}
+```
+
+### Specular
+
+`float3 _WorldSpaceCameraPos`: The position of the camera can be accessed
+
+`unity_ObjectToWorld`: object-to-world matrix
+
+ [`reflect`](https://developer.download.nvidia.com/cg/reflect.html): It takes the direction of an incoming light ray and reflects it based on a surface normal.
+
+```c++
+
+                float3 reflectionDir = reflect(-lightDir, i.normal);
+```
+
+`Blinn-Phong`: It uses a vector **halfway between the light direction and the view direction**. The dot product between the normal and the half vector determines the specular contribution.
+
+```c++
+			float4 MyFragmentProgram (Interpolators i) : SV_TARGET {
+				i.normal = normalize(i.normal);
+				float3 lightDir = _WorldSpaceLightPos0.xyz;
+                float3 viewDir = normalize(_WorldSpaceCameraPos - i.worldPos);
+				float3 lightColor = _LightColor0.rgb;
+				float3 albedo = tex2D(_MainTex, i.uv).rgb * _Tint.rgb;
+				float3 diffuse =
+					albedo * lightColor * DotClamped(lightDir, i.normal);
+                float3 halfVector = normalize(lightDir + viewDir);
+
+				return pow(
+					DotClamped(halfVector, i.normal),
+					_Smoothness * 100
+				);
+```
+
+### Energy Conservation
+
+`EnergyConservationBetweenDiffuseAndSpecular`:  utility function to take care of the energy conservation
+
+(too bright, need to be absorbed)
+
+```c++
+                #include "UnityStandardUtils.cginc"
+                
+			float4 MyFragmentProgram (Interpolators i) : SV_TARGET {
+				i.normal = normalize(i.normal);
+				float3 lightDir = _WorldSpaceLightPos0.xyz;
+                float3 viewDir = normalize(_WorldSpaceCameraPos - i.worldPos);
+				float3 lightColor = _LightColor0.rgb;
+				float3 albedo = tex2D(_MainTex, i.uv).rgb * _Tint.rgb;
+                float oneMinusReflectivity;
+				albedo = EnergyConservationBetweenDiffuseAndSpecular(
+					albedo, _SpecularTint.rgb, oneMinusReflectivity
+				);
+				float3 diffuse =
+					albedo * lightColor * DotClamped(lightDir, i.normal);
+                float3 halfVector = normalize(lightDir + viewDir);
+                float3 specular = _SpecularTint.rgb * lightColor * pow(
+					DotClamped(halfVector, i.normal),
+					_Smoothness * 100
+				);
+
+				return float4(diffuse + specular, 1);
+			}
+            ENDCG
+        }
+```
+
+`metals`: strong specular tint, monochrome, do not have albedo
+
+`nonmetals / dielectric`: weak monochrome specular, don't have a colored specular
+
+`DiffuseAndSpecularFromMetallic`: Even pure dielectrics still have some specular reflection. *UnityStandardUtils* also has the `DiffuseAndSpecularFromMetallic` function, which takes care of this for us.
+
+```c++
+			float4 MyFragmentProgram (Interpolators i) : SV_TARGET {
+				i.normal = normalize(i.normal);
+				float3 lightDir = _WorldSpaceLightPos0.xyz;
+                float3 viewDir = normalize(_WorldSpaceCameraPos - i.worldPos);
+				float3 lightColor = _LightColor0.rgb;
+				float3 albedo = tex2D(_MainTex, i.uv).rgb * _Tint.rgb;
+                float3 specularTint;
+				float oneMinusReflectivity;
+				albedo = DiffuseAndSpecularFromMetallic(
+					albedo, _Metallic, specularTint, oneMinusReflectivity
+				);
+				float3 diffuse =
+					albedo * lightColor * DotClamped(lightDir, i.normal);
+                float3 halfVector = normalize(lightDir + viewDir);
+                float3 specular = specularTint * lightColor * pow(
+					DotClamped(halfVector, i.normal),
+					_Smoothness * 100
+				);
+
+				return float4(diffuse + specular, 1);
+			}
+```
+
+### Physically-Based Shading
+
+`#pragma target 3.0`: To make sure that Unity selects the best BRDF function, we have to target at least shader level 3.0
+
+`BRDF`: stands for bidirectional reflectance distribution function.
+
+`UNITY_BRDF_PBS`: The algorithm is accessible via the `**UNITY_BRDF_PBS**` macro, which is defined in *UnityPBSLighting*, The functions each have eight parameters.
+
+```c++
+			float4 MyFragmentProgram (Interpolators i) : SV_TARGET {
+				i.normal = normalize(i.normal);
+				float3 lightDir = _WorldSpaceLightPos0.xyz;
+				float3 viewDir = normalize(_WorldSpaceCameraPos - i.worldPos);
+
+				float3 lightColor = _LightColor0.rgb;
+				float3 albedo = tex2D(_MainTex, i.uv).rgb * _Tint.rgb;
+
+				float3 specularTint;
+				float oneMinusReflectivity;
+				albedo = DiffuseAndSpecularFromMetallic(
+					albedo, _Metallic, specularTint, oneMinusReflectivity
+				);
+				
+				UnityLight light;
+				light.color = lightColor;
+				light.dir = lightDir;
+				light.ndotl = DotClamped(i.normal, lightDir);
+				UnityIndirect indirectLight;
+				indirectLight.diffuse = 0;
+				indirectLight.specular = 0;
+
+				return UNITY_BRDF_PBS(
+					albedo, specularTint,
+					oneMinusReflectivity, _Smoothness,
+					i.normal, viewDir,
+					light, indirectLight
+				);
+			}
+```
+
