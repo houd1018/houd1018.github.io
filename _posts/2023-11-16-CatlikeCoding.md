@@ -111,7 +111,7 @@ Shader "Custom/Texture Splatting" {
 
 ``#include "UnityStandardBRDF.cginc"``: defines the convenient `DotClamped` function, It contains a lot of other lighting function
 
-![](../assets/pic/include-files.png)
+![](/assets/pic/include-files.png)
 
 `float4 _WorldSpaceLightPos0`: It has four components, because these are homogeneous coordinates. So the fourth component is 0 for our directional light.
 
@@ -121,7 +121,7 @@ Shader "Custom/Texture Splatting" {
 Tags {
     "LightMode" = "ForwardBase"
 }
-...
+.
 
 float4 MyFragmentProgram (Interpolators i) : SV_TARGET {
     i.normal = normalize(i.normal);
