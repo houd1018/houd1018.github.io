@@ -433,11 +433,16 @@ $$
 
 **Using Both Dimensions** ->**cross product**
 $$
+{
 {A}\times{B}={\left|{\left|{A}\right|}\right|}{\left|{\left|{B}\right|}\right|} \sin{{\left(\theta\right)}}{N}
+}
 $$
 
+
 $$
+{
 {A}\times{B}={\left[\begin{matrix}{A}_{{y}}{B}_{{z}}-{A}_{{z}}{B}_{{y}}\\{A}_{{z}}{B}_{{x}}-{A}_{{x}}{B}_{{z}}\\{A}_{{x}}{B}_{{y}}-{A}_{{y}}{B}_{{x}}\end{matrix}\right]}
+}
 $$
 
 we can construct the vector directly, instead of having to rely on the `cross` function.
