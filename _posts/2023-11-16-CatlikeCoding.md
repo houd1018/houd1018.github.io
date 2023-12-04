@@ -415,9 +415,6 @@ https://catlikecoding.com/unity/tutorials/rendering/part-5/
 ```
 
 **Central Difference**: We've used **finite difference approximations** to create normal vectors. Specifically, by using the forward difference method. We take a point, and then look in one direction to determine the slope. As a result, the normal is biased in that direction. To get a better approximation of the normal, we can instead offset the sample points in **both directions**. This centers the linear approximation on the current point, and is known as the central difference method.
-$$
-
-$$
 
 ```c++
             void InitializeFragmentNormal(inout Interpolators i) {
@@ -434,26 +431,15 @@ $$
 **Using Both Dimensions** ->**cross product**
 
 
-
-
 $$
 {
 {A}\times{B}={\left|{\left|{A}\right|}\right|}{\left|{\left|{B}\right|}\right|} \sin{{\left(\theta\right)}}{N}
 }
 $$
 
---------
-$$
-{
-{A}\times{B}={\left[\begin{matrix}{A}_{{y}}{B}_{{z}}-{A}_{{z}}{B}_{{y}}\\{A}_{{z}}{B}_{{x}}-{A}_{{x}}{B}_{{z}}\\{A}_{{x}}{B}_{{y}}-{A}_{{y}}{B}_{{x}}\end{matrix}\right]}
-}
-$$
+
 
 we can construct the vector directly, instead of having to rely on the `cross` function.
-$$
-
-$$
-
 ```c++
             void InitializeFragmentNormal(inout Interpolators i) {
                 float2 du = float2(_HeightMap_TexelSize.x * 0.5, 0);
