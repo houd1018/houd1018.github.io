@@ -432,6 +432,10 @@ $$
 
 
 **Using Both Dimensions** ->**cross product**
+
+
+
+
 $$
 {
 {A}\times{B}={\left|{\left|{A}\right|}\right|}{\left|{\left|{B}\right|}\right|} \sin{{\left(\theta\right)}}{N}
