@@ -269,3 +269,135 @@ float4 MyFragmentProgram (Interpolators i) : SV_TARGET {
 			}
 ```
 
+## Multiple Lights
+
+**Include Files**
+
+```c++
+#if !defined(MY_LIGHTING_INCLUDED)
+#define MY_LIGHTING_INCLUDED
+
+#include "UnityPBSLighting.cginc"
+
+…
+
+#endif
+```
+
+### Second Light
+
+`Blend One One`: The default mode is no blending, which is equivalent to `One Zero`. The result of such a pass replaced anything that was previously in the frame buffer. To add to the frame buffer, we'll have to instruct it to use the `One One` blend mode. This is known as additive blending.
+
+```c++
+        Pass {
+			Tags {
+				"LightMode" = "ForwardAdd"
+			}
+
+            Blend One One
+            ZWrite Off
+
+			CGPROGRAM
+
+			#pragma target 3.0
+
+			#pragma vertex MyVertexProgram
+			#pragma fragment MyFragmentProgram
+
+			#include "MyLighting.cginc"
+
+			ENDCG
+		}
+```
+
+### Point Light
+
+The `_WorldSpaceLightPos0` variable contains the current light's position.
+
+But in case of a directional light, it actually holds the direction towards the light. 
+
+This is done by subtracting the fragment's world position and normalizing the result.
+
+```c++
+light.dir = normalize(_WorldSpaceLightPos0.xyz - i.worldPos);
+```
+
+`UNITY_LIGHT_ATTENUATION`
+
+`#define POINT`: there are multiple versions of it, one per light type. By default, it's for the directional light, which has no attenuation at all.
+
+```c++
+        Pass {
+			Tags {
+				"LightMode" = "ForwardAdd"
+			}
+
+            Blend One One
+            ZWrite Off
+
+			CGPROGRAM
+
+			#pragma target 3.0
+
+			#pragma vertex MyVertexProgram
+			#pragma fragment MyFragmentProgram
+
+            #define POINT
+
+			#include "MyLighting.cginc"
+
+			ENDCG
+		}
+    }
+....
+UnityLight CreateLight (Interpolators i) {
+    UnityLight light;
+    light.dir = normalize(_WorldSpaceLightPos0.xyz - i.worldPos);
+    UNITY_LIGHT_ATTENUATION(attenuation, 0, i.worldPos);    
+    light.color = _LightColor0.rgb * attenuation;
+    light.ndotl = DotClamped(i.normal, light.dir);
+    return light;
+}
+```
+
+### Mixing Light
+
+**Shader Variants**
+
+`#pragma multi_compile DIRECTIONAL POINT`: This statement defines a list of keywords. Unity will create multiple shader variants for us, each defining one of those keywords.
+
+Unity decides which variant to use based on the current light and the shader variant keywords. When rendering a directional light, it uses the `DIRECTIONAl` variant. When rendering a point light, it uses the `POINT` variant. And when there isn't a match, it just picks the first variant from the list.
+
+```c++
+            UnityLight CreateLight (Interpolators i) {
+                UnityLight light;
+                
+                #if defined(POINT)
+                    light.dir = normalize(_WorldSpaceLightPos0.xyz - i.worldPos);
+                #else
+                    light.dir = _WorldSpaceLightPos0.xyz;
+                #endif
+                
+                float3 lightVec = _WorldSpaceLightPos0.xyz - i.worldPos;
+                UNITY_LIGHT_ATTENUATION(attenuation, 0, i.worldPos);
+                light.color = _LightColor0.rgb * attenuation;
+                light.ndotl = DotClamped(i.normal, light.dir);
+                return light;
+            }
+```
+
+### Vertex Lights
+
+Every visible object always gets rendered with its base pass. This pass takes care of the main directional light. Every additional light will add an extra additive pass on top of that. Thus, many lights will result in many draw calls. 
+
+The problem is so bad, because lights are completely switched off. Fortunately, there is another way to render lights much cheaper, without completely turning them off. We can render them **per vertex**, instead of per fragment.
+
+Vertex lighting is **only supported for point lights**.
+
+`unity_LightColor[0].rgb`: *UnityShaderVariables* defines an array of vertex light colors.
+
+### Spherical Harmonics
+
+`ShadeSH9`: *UnityCG* contains the `ShadeSH9` function, which computes lighting based on the spherical harmonics data, and a normal parameter.
+
+https://catlikecoding.com/unity/tutorials/rendering/part-5/
