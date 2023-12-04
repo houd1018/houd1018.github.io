@@ -442,7 +442,7 @@ $$
 
 we can construct the vector directly, instead of having to rely on the `cross` function.
 $$
-\left[\begin{matrix}{0}\\{{f}_{{v}}^{'}}\\{1}\end{matrix}\right]}\times{\left[\begin{matrix}{1}\\{{f}_{{u}}^{'}}\\{0}\end{matrix}\right]}={\left[\begin{matrix}-{{f}_{{u}}^{'}}\\{1}\\-{{f}_{{v}}^{'}}\end{matrix}\right]
+
 $$
 
 ```c++
