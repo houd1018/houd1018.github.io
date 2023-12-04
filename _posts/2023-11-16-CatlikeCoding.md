@@ -426,7 +426,11 @@ https://catlikecoding.com/unity/tutorials/rendering/part-5/
             }
 ```
 
-
+$$
+{
+{{f}^{'}{\left({u}\right)}}=\lim_{{\delta\to{0}}}\frac{{ f{{\left({u}+\frac{\delta}{{2}}\right)}}- f{{\left({u}-\frac{\delta}{{2}}\right)}}}}{\delta}
+}
+$$
 
 **Using Both Dimensions** ->**cross product**
 
