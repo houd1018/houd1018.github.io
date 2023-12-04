@@ -416,7 +416,7 @@ https://catlikecoding.com/unity/tutorials/rendering/part-5/
 **Central Difference**: We've used **finite difference approximations** to create normal vectors. Specifically, by using the forward difference method. We take a point, and then look in one direction to determine the slope. As a result, the normal is biased in that direction. To get a better approximation of the normal, we can instead offset the sample points in **both directions**. This centers the linear approximation on the current point, and is known as the central difference method.
 $$
 {
-\displaystyle{{f}^{'}{\left({u}\right)}}=\lim_{{\delta\to{0}}}\frac{{ f{{\left({u}+\frac{\delta}{{2}}\right)}}- f{{\left({u}-\frac{\delta}{{2}}\right)}}}}{\delta}
+{{f}^{'}{\left({u}\right)}}=\lim_{{\delta\to{0}}}\frac{{ f{{\left({u}+\frac{\delta}{{2}}\right)}}- f{{\left({u}-\frac{\delta}{{2}}\right)}}}}{\delta}
 }
 $$
 
@@ -434,16 +434,16 @@ $$
 
 **Using Both Dimensions** ->**cross product**
 $$
-\displaystyle{A}\times{B}={\left|{\left|{A}\right|}\right|}{\left|{\left|{B}\right|}\right|} \sin{{\left(\theta\right)}}{N}
+{A}\times{B}={\left|{\left|{A}\right|}\right|}{\left|{\left|{B}\right|}\right|} \sin{{\left(\theta\right)}}{N}
 $$
 
 $$
-\displaystyle{A}\times{B}={\left[\begin{matrix}{A}_{{y}}{B}_{{z}}-{A}_{{z}}{B}_{{y}}\\{A}_{{z}}{B}_{{x}}-{A}_{{x}}{B}_{{z}}\\{A}_{{x}}{B}_{{y}}-{A}_{{y}}{B}_{{x}}\end{matrix}\right]}
+{A}\times{B}={\left[\begin{matrix}{A}_{{y}}{B}_{{z}}-{A}_{{z}}{B}_{{y}}\\{A}_{{z}}{B}_{{x}}-{A}_{{x}}{B}_{{z}}\\{A}_{{x}}{B}_{{y}}-{A}_{{y}}{B}_{{x}}\end{matrix}\right]}
 $$
 
 we can construct the vector directly, instead of having to rely on the `cross` function.
 $$
-\displaystyle{\left[\begin{matrix}{0}\\{{f}_{{v}}^{'}}\\{1}\end{matrix}\right]}\times{\left[\begin{matrix}{1}\\{{f}_{{u}}^{'}}\\{0}\end{matrix}\right]}={\left[\begin{matrix}-{{f}_{{u}}^{'}}\\{1}\\-{{f}_{{v}}^{'}}\end{matrix}\right]}
+\left[\begin{matrix}{0}\\{{f}_{{v}}^{'}}\\{1}\end{matrix}\right]}\times{\left[\begin{matrix}{1}\\{{f}_{{u}}^{'}}\\{0}\end{matrix}\right]}={\left[\begin{matrix}-{{f}_{{u}}^{'}}\\{1}\\-{{f}_{{v}}^{'}}\end{matrix}\right]
 $$
 
 ```c++
