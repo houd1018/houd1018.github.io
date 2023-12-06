@@ -350,7 +350,7 @@ light.dir = normalize(_WorldSpaceLightPos0.xyz - i.worldPos);
 			ENDCG
 		}
     }
-....
+
 UnityLight CreateLight (Interpolators i) {
     UnityLight light;
     light.dir = normalize(_WorldSpaceLightPos0.xyz - i.worldPos);
@@ -415,12 +415,8 @@ https://catlikecoding.com/unity/tutorials/rendering/part-5/
 ```
 
 **Central Difference**: We've used **finite difference approximations** to create normal vectors. Specifically, by using the forward difference method. We take a point, and then look in one direction to determine the slope. As a result, the normal is biased in that direction. To get a better approximation of the normal, we can instead offset the sample points in **both directions**. This centers the linear approximation on the current point, and is known as the central difference method.
-$$
-{
-\displaystyle{{f}^{'}{\left({u}\right)}}=\lim_{{\delta\to{0}}}\frac{{ f{{\left({u}+\frac{\delta}{{2}}\right)}}- f{{\left({u}-\frac{\delta}{{2}}\right)}}}}{\delta}
-}
-$$
 
+![](/assets/pic/1204132955.png)
 
 ```c++
             void InitializeFragmentNormal(inout Interpolators i) {
@@ -439,7 +435,7 @@ $$
 }
 $$
 
-
+![](/assets/pic/1204133054.png)
 
 we can construct the vector directly, instead of having to rely on the `cross` function.
 ```c++
@@ -456,3 +452,116 @@ we can construct the vector directly, instead of having to rely on the `cross` f
                 i.normal = normalize(i.normal);
             }
 ```
+
+### Normal Mapping
+
+**Grey Scale -> RGB normal map -> save calculation**
+
+While bump mapping works, we have to perform multiple texture samples and finite difference calculations. This seems like a **waste**, as the resulting normal should always be the same. Why do all this work every frame? We can do it once and store the normals in a texture.
+
+![](/assets/pic/1204134529.png)
+
+```c++
+[NoScaleOffset] _NormalMap ("Normals", 2D) = "bump" {}
+…
+sampler2D _NormalMap;
+…
+void InitializeFragmentNormal(inout Interpolators i) {
+	i.normal = tex2D(_NormalMap, i.uv).rgb;
+	i.normal = normalize(i.normal);
+}
+```
+
+`DXT5nm`: Even though the texture preview shows RGB encoding, Unity actually uses DXT5nm. The DXT5nm format only stores the X and Y components of the normal. Its Z component is discarded. The Y component is stored in the G channel, as you might expect. However, the X component is stored in the A channel. **The R and B channels are not used**.
+
+```c++
+            void InitializeFragmentNormal(inout Interpolators i) {
+                i.normal.xy = tex2D(_NormalMap, i.uv).wy * 2 - 1;
+                i.normal.z = sqrt(1 - saturate(dot(i.normal.xy, i.normal.xy)));
+                i.normal = i.normal.xzy;
+            }
+```
+
+`UnpackScaleNormal`: *UnityStandardUtils* contains the `UnpackScaleNormal` function. It automatically uses the correct decoding for normal maps, and scales normals as well.
+
+```c++
+void InitializeFragmentNormal(inout Interpolators i) {
+//	i.normal.xy = tex2D(_NormalMap, i.uv).wy * 2 - 1;
+//	i.normal.xy *= _BumpScale;
+//	i.normal.z = sqrt(1 - saturate(dot(i.normal.xy, i.normal.xy)));
+	i.normal = UnpackScaleNormal(tex2D(_NormalMap, i.uv), _BumpScale);
+	i.normal = i.normal.xzy;
+	i.normal = normalize(i.normal);
+}
+```
+
+### Bump Details
+
+detail map + mainTex
+
+[More details on How to blend Normal](https://catlikecoding.com/unity/tutorials/rendering/part-6/)
+
+`BlendNormals`: *UnityStandardUtils* contains the `BlendNormals` function, which also uses whiteout blending.
+
+```c++
+            void InitializeFragmentNormal(inout Interpolators i) {
+                float3 mainNormal =
+                    UnpackScaleNormal(tex2D(_NormalMap, i.uv.xy), _BumpScale);
+                float3 detailNormal =
+                    UnpackScaleNormal(tex2D(_DetailNormalMap, i.uv.zw), _DetailBumpScale);
+                i.normal = BlendNormals(mainNormal, detailNormal);
+                i.normal = i.normal.xzy;
+            }
+```
+
+### Tangent Space
+
+Up to this points, we have assumed that we're shading a **flat surface** that is aligned with the **XZ plane**. But for this technique to be of any use, it must work for arbitrary geometry.
+
+We can use the vertex normal and tangent to construct a **3D space that matches the mesh surface**. This space is known as tangent space, the tangent basis, or TBN space. In the case of a cube, tangent space is uniform per face. In the case of a sphere, tangent space wraps around its surface.
+$$
+{
+{B}={{N}\times{T}}
+}
+$$
+
+![](/assets/pic/1204164507.png)
+
+
+```c++
+            Interpolators MyVertexProgram (VertexData v) {
+                Interpolators i;
+                i.position = UnityObjectToClipPos(v.position);
+                i.worldPos = mul(unity_ObjectToWorld, v.position);
+
+                i.normal = UnityObjectToWorldNormal(v.normal);
+                //to world space
+                i.tangent = float4(UnityObjectToWorldDir(v.tangent.xyz), v.tangent.w);
+                
+                i.uv.xy = TRANSFORM_TEX(v.uv, _MainTex);
+	            i.uv.zw = TRANSFORM_TEX(v.uv, _DetailTex);
+                ComputeVertexLightColor(i);
+                return i;
+            }
+```
+
+```c++
+            void InitializeFragmentNormal(inout Interpolators i) {
+                float3 mainNormal =
+                    UnpackScaleNormal(tex2D(_NormalMap, i.uv.xy), _BumpScale);
+                float3 detailNormal =
+                    UnpackScaleNormal(tex2D(_DetailNormalMap, i.uv.zw), _DetailBumpScale);
+
+                float3 tangentSpaceNormal = BlendNormals(mainNormal, detailNormal);
+                float3 binormal = cross(i.normal, i.tangent.xyz) * i.tangent.w;
+
+                i.normal = normalize(
+                    tangentSpaceNormal.x * i.tangent +
+                    tangentSpaceNormal.y * binormal +
+                    tangentSpaceNormal.z * i.normal
+                );
+            }
+```
+
+If we want to be consistent with Unity's standard shaders, we have to calculate the binormal **per vertex**. The upside of doing that is that we don't have to compute a cross product in the fragment shader. The downside is that we need an additional interpolator. If you're not sure which method to use, you can always support both.
+
