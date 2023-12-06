@@ -521,7 +521,7 @@ Up to this points, we have assumed that we're shading a **flat surface** that is
 We can use the vertex normal and tangent to construct a **3D space that matches the mesh surface**. This space is known as tangent space, the tangent basis, or TBN space. In the case of a cube, tangent space is uniform per face. In the case of a sphere, tangent space wraps around its surface.
 $$
 {
-{B}={{N}\times{T}}
+B={N \times T}
 }
 $$
 
