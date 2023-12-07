@@ -565,3 +565,228 @@ $$
 
 If we want to be consistent with Unity's standard shaders, we have to calculate the binormal **per vertex**. The upside of doing that is that we don't have to compute a cross product in the fragment shader. The downside is that we need an additional interpolator. If you're not sure which method to use, you can always support both.
 
+## Shadows
+
+There are a few techniques to support real-time shadows. Each has it advantages and disadvantages. Unity uses the most common technique nowadays, which is **shadow mapping**.
+
+![](/assets/pic/1205203603.png)
+
+`Collecting Shadows -> Shadow map` : Conceptually, we have two vectors that should end up at the same point. If they do, both the camera and light can see that point, and so it is lit. If the light's vector ends before reaching the point, then the light is blocked, which means that the point is shadowed.
+
+`cascades`: When you have a directional light casting shadows, it needs to cover a large area, such as an outdoor scene. However, **rendering high-quality shadows across the entire scene can be computationally expensive**. To address this, shadow cascades **divide the camera frustum** (the viewable area) into multiple cascades or regions with **different levels of detail**. Each cascade is then rendered with a different level of shadow map resolution.
+
+The shape of the cascade bands depends on the *Shadow Projection* quality setting. The default is *Stable Fit*. In this mode, the bands are chosen based on the distance to the camera's position. The other option is *Close Fit*, which uses the camera's depth instead. This produces rectangular bands in the camera's view direction.
+
+![](/assets/pic/1207100851.png)
+
+`Shadow swimming`:  the shadow projection now depends on the position and orientation or the camera. As a result, when the camera moves or rotates, the shadow maps change as well
+
+`Shadow Acne`:  One way to prevent this problem is by adding **a depth offset** when rendering the shadow maps. This **bias** is added to the distance from the light to the shadow casting surface, pushes the shadows into the surfaces.
+
+![](/assets/pic/1207101103.png)
+
+`peter panning`: But too large a bias can make it seem like shadows are disconnected from the objects that cast them. This effect is known as peter panning.
+
+`Normal Bias`:  This bias pushes the vertices of the shadow casters inwards, along their normals. This also reduces self-shadowing, but it also makes the shadows smaller and can cause holes to appear in the shadows.
+
+`MSAA`: when Unity renders the screen-space shadow maps, it does so with a single quad that covers the entire view. As a result, there are no triangle edges, and thus MSAA does not affect the screen-space shadow map. MSAA does work for the final image, but the shadow values are taken straight from the screen-space shadow map. This becomes very obvious when a light surface next to a darker surface is shadowed. The edge between the light and dark geometry is anti-aliased, while the shadow edge isn't.
+
+Anti-aliasing methods that rely on image post-processing – like FXAA – don't have this problem, because they are applied after the entire scene has been rendered.
+
+### Cast Shadow
+
+We know that Unity renders the scene multiple times for directional shadows. Once for the depth pass, and once per light, for each shadow map cascade. The screen-space shadow map is a screen-space effect and doesn't concern us.
+
+To support all relevant passes, we have to add a pass to our shader, with its light mode set to *ShadowCaster*. Because we are only interested in the depth values, it will be a lot simpler than our other passes.
+
+```c++
+        Pass {
+			Tags {
+				"LightMode" = "ShadowCaster"
+			}
+
+			CGPROGRAM
+
+			#pragma target 3.0
+
+			#pragma vertex MyShadowVertexProgram
+			#pragma fragment MyShadowFragmentProgram
+
+			#include "My Shadows.cginc"
+
+			ENDCG
+		}
+```
+
+`UnityClipSpaceShadowCasterPos`: function to apply the **normal bias**.
+
+To support the **depth bias**, we can use the `UnityApplyLinearShadowBias` function
+
+```c++
+#if !defined(MY_SHADOWS_INCLUDED)
+#define MY_SHADOWS_INCLUDED
+
+#include "UnityCG.cginc"
+
+struct VertexData {
+	float4 position : POSITION;
+	float3 normal : NORMAL;
+};
+
+float4 MyShadowVertexProgram (VertexData v) : SV_POSITION {
+	float4 position = UnityClipSpaceShadowCasterPos(v.position.xyz, v.normal);
+	return UnityApplyLinearShadowBias(position);
+}
+
+half4 MyShadowFragmentProgram () : SV_TARGET {
+	return 0;
+}
+
+#endif
+```
+
+### Receive Shadow
+
+When the main directional light casts shadows, Unity will look for a shader variant that has the `SHADOWS_SCREEN` keyword enabled. So we have to create two variants of our base pass, one with and one without this keyword. This works the same as for the `VERTEXLIGHT_ON` keyword.
+
+The pass now has two multi-compile directives, each for a single keyword. As a result, there are four possible variants. One with no keywords, one for each keyword, and one with both keywords.
+
+```
+// Snippet #0 platforms ffffffff:
+SHADOWS_SCREEN VERTEXLIGHT_ON
+
+4 keyword variants used in scene:
+
+<no keywords defined>
+VERTEXLIGHT_ON
+SHADOWS_SCREEN
+SHADOWS_SCREEN VERTEXLIGHT_ON
+```
+
+```c++
+		Pass {
+			Tags {
+				"LightMode" = "ForwardBase"
+			}
+
+			CGPROGRAM
+
+			#pragma target 3.0
+			
+			#pragma multi_compile _ SHADOWS_SCREEN
+			#pragma multi_compile _ VERTEXLIGHT_ON
+
+			#pragma vertex MyVertexProgram
+			#pragma fragment MyFragmentProgram
+
+			#define FORWARD_BASE_PASS
+
+			#include "MyLighting.cginc"
+
+			ENDCG
+		}
+```
+
+#### Sampling Shadows
+
+To get to the shadows, we have to sample the screen-space shadow map.
+
+**Get screen-space texture coordinates**
+
+We can access the screen-space shadows via `_ShadowMapTexture`.
+
+```c++
+struct Interpolators {
+	…
+
+	#if defined(SHADOWS_SCREEN)
+		float4 shadowCoordinates : TEXCOORD5;
+	#endif
+
+	#if defined(VERTEXLIGHT_ON)
+		float3 vertexLightColor : TEXCOORD6;
+	#endif
+};
+
+…
+
+Interpolators MyVertexProgram (VertexData v) {
+	…
+
+	#if defined(SHADOWS_SCREEN)
+		i.shadowCoordinates = i.position;
+	#endif
+
+	ComputeVertexLightColor(i);
+	return i;
+}
+```
+still on **clip-space coordinates** instead of **screen-space coordinates**
+
+```c++
+UnityLight CreateLight (Interpolators i) {
+	…
+
+	#if defined(SHADOWS_SCREEN)
+		float attenuation = tex2D(_ShadowMapTexture, i.shadowCoordinates.xy);
+	#else
+		UNITY_LIGHT_ATTENUATION(attenuation, 0, i.worldPos);
+	#endif
+
+	…
+}
+```
+
+we can use the `ComputeScreenPos` function from *UnityCG*
+
+```c++
+                #if defined(SHADOWS_SCREEN)
+                    i.shadowCoordinates = ComputeScreenPos(i.position);
+                #endif
+```
+
+`SHADOW_COORDS` defines the interpolator for shadow coordinates
+
+```c++
+struct Interpolators {
+	…
+	
+//	#if defined(SHADOWS_SCREEN)
+//		float4 shadowCoordinates : TEXCOORD5;
+//	#endif
+	SHADOW_COORDS(5)
+
+	…
+};
+```
+
+`TRANSFER_SHADOW` fills these coordinates in the vertex program.
+
+```c++
+Interpolators MyVertexProgram (VertexData v) {
+	…
+
+//	#if defined(SHADOWS_SCREEN)
+//		i.shadowCoordinates = i.position;
+//	#endif
+	TRANSFER_SHADOW(i);
+
+	…
+}
+```
+
+**Multiple Shadows**
+
+The main directional light is now casting shadows, but the second directional light still doesn't. That's because we don't yet define `SHADOWS_SCREEN` in the **additive pass**. We could add a multi-compile statement to it, but `SHADOWS_SCREEN` only works for directional lights. To get the correct combination of keywords, change the existing multi-compile statement to one that also includes shadows.
+
+```c
+#pragma multi_compile_fwdadd_fullshadows
+```
+
+![](/assets/pic/1207121025.png)
+
+**Spot Light**:  there are big differences between a directional light and a spotlight. The spotlight has an actual position, and its light rays aren't parallel. So the spotlight's camera has a perspective view, and cannot be more around arbitrarily. As a result, these lights **cannot support shadow cascades**.
+
+**Point light**: When you inspect the shadow maps via the frame debugger, you will discover that not one, but six maps are rendered per light. This happens because point lights shine in all directions. As as result, the shadow map has to be a cube map.
+
+Just like with spotlight shadows, the shadow map is sampled once for hard shadows, and four times for soft shadows. The big difference is that Unity **doesn't support filtering for the shadow cube maps**. As a result, the edges of the shadows are much harsher. So point light shadows are **both expensive and aliased**.
