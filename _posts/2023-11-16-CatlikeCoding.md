@@ -790,3 +790,41 @@ The main directional light is now casting shadows, but the second directional li
 **Point light**: When you inspect the shadow maps via the frame debugger, you will discover that not one, but six maps are rendered per light. This happens because point lights shine in all directions. As as result, the shadow map has to be a cube map.
 
 Just like with spotlight shadows, the shadow map is sampled once for hard shadows, and four times for soft shadows. The big difference is that Unity **doesn't support filtering for the shadow cube maps**. As a result, the edges of the shadows are much harsher. So point light shadows are **both expensive and aliased**.
+
+## Reflection
+
+And apparently, it reflects more at its edge. That's because every surface becomes more reflective as the view angle becomes more shallow. At glancing angles, most light is reflected, and everything becomes a mirror. This is known as `Fresnel reflection`. 
+
+**The smoother a surface, the stronger the Fresnel reflections**. When using a high smoothness, the red ring becomes very obvious.
+
+![](/assets/pic/1208092652.png)
+
+In the case of **metals**, **the indirect reflections dominate everywhere**. Instead of a black sphere, we now get a red one.
+
+![](/assets/pic/1208094607.png)
+
+`unity_SpecCube0`: skybox cube map. It is defined as `unity_SpecCube0` in *UnityShaderVariables*. The type of this variable depends on the target platform, which is determined in *HSLSupport*.
+
+`UNITY_SAMPLE_TEXCUBE`: A cube map is sampled with a 3D vector, which specifies a sample direction.
+
+```c++
+UnityIndirect CreateIndirectLight (Interpolators i) {
+	UnityIndirect indirectLight;
+	indirectLight.diffuse = 0;
+	indirectLight.specular = 0;
+
+	#if defined(VERTEXLIGHT_ON)
+		indirectLight.diffuse = i.vertexLightColor;
+	#endif
+
+	#if defined(FORWARD_BASE_PASS)
+		indirectLight.diffuse += max(0, ShadeSH9(float4(i.normal, 1)));
+		float3 envSample = UNITY_SAMPLE_TEXCUBE(unity_SpecCube0, i.normal);
+		indirectLight.specular = envSample;
+	#endif
+
+	return indirectLight;
+}
+```
+
+ `DecodeHDR`: convert the samples from HDR format to RGB. The HDR data is stored in four channels, using the RGBM format. So we have to sample a `float4` value, then convert.
