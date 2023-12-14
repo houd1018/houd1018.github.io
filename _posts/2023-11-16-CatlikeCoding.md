@@ -47,6 +47,8 @@ i.uv = v.uv * _MainTex_ST.xy + _MainTex_ST.zw;
 
 ## Combine Texture
 
+![](/assets/pic/1214012851.png)
+
 ```c++
 Shader "Custom/Texture Splatting" {
 
@@ -107,6 +109,8 @@ Shader "Custom/Texture Splatting" {
 ```
 
 ## Light
+
+![](/assets/pic/Lighting.gif)
 
 ### Diffuse
 
@@ -405,6 +409,8 @@ https://catlikecoding.com/unity/tutorials/rendering/part-5/
 
 ## Bumpiness
 
+![](/assets/pic/bumpiness.gif)
+
 ### Height map
 
 **how to process height map -> normal**
@@ -566,6 +572,8 @@ $$
 If we want to be consistent with Unity's standard shaders, we have to calculate the binormal **per vertex**. The upside of doing that is that we don't have to compute a cross product in the fragment shader. The downside is that we need an additional interpolator. If you're not sure which method to use, you can always support both.
 
 ## Shadows
+
+![](/assets/pic/shadow.gif)
 
 There are a few techniques to support real-time shadows. Each has it advantages and disadvantages. Unity uses the most common technique nowadays, which is **shadow mapping**.
 
