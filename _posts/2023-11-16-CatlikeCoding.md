@@ -836,3 +836,447 @@ UnityIndirect CreateIndirectLight (Interpolators i) {
 ```
 
  `DecodeHDR`: convert the samples from HDR format to RGB. The HDR data is stored in four channels, using the RGBM format. So we have to sample a `float4` value, then convert.
+
+### Imperfect Reflection
+
+The rougher a surface becomes, the more diffuse its reflections get.
+
+`UNITY_SPECCUBE_LOD_STEPS`: As roughness goes from 0 to 1, we have to scale it by the mipmap range that we're using. Unity uses the `UNITY_SPECCUBE_LOD_STEPS` macro to determine this range, so let's use it too.
+
+ `UNITY_SAMPLE_TEXCUBE_LOD`: We can use the `**UNITY_SAMPLE_TEXCUBE_LOD**` macro to sample a cube map at a specific mipmap level.
+
+![](/assets/pic/160951.png)
+
+`Unity_GlossyEnvironment`:  contains all the code to convert the roughness, sample the cube map, and convert from HDR
+
+```c++
+UnityIndirect CreateIndirectLight (Interpolators i, float3 viewDir) {
+	UnityIndirect indirectLight;
+	indirectLight.diffuse = 0;
+	indirectLight.specular = 0;
+
+	#if defined(VERTEXLIGHT_ON)
+		indirectLight.diffuse = i.vertexLightColor;
+	#endif
+
+	#if defined(FORWARD_BASE_PASS)
+		indirectLight.diffuse += max(0, ShadeSH9(float4(i.normal, 1)));
+		float3 reflectionDir = reflect(-viewDir, i.normal);
+
+		Unity_GlossyEnvironmentData envData;	
+		envData.roughness = 1 - _Smoothness;
+		envData.reflUVW = reflectionDir;
+		indirectLight.specular = Unity_GlossyEnvironment(
+			UNITY_PASS_TEXCUBE(unity_SpecCube0), unity_SpecCube0_HDR, envData
+		);
+
+
+	#endif
+
+	return indirectLight;
+}
+```
+
+**Bumpy Mirrors && Metals**
+
+![](/assets/pic/bumpyReflection.gif)
+
+### Interpolating Probes
+
+Unity supplies shaders with data of two reflection probes, so we can blend between them. 
+
+Use the `UNITY_PASS_TEXCUBE_SAMPLER` macro to combine the second probe's texture with the only sampler that we have. that gets rid of the error.
+
+![](/assets/pic/interpolateProbe.gif)
+
+## Complex Material
+
+### Shader GUI
+
+```c++
+	CustomEditor "MyLightingShaderGUI"
+```
+
+```c++
+    void DoMain()
+    {
+        GUILayout.Label("Main Maps", EditorStyles.boldLabel);
+
+        MaterialProperty mainTex = FindProperty("_MainTex");
+
+        editor.TexturePropertySingleLine(
+            MakeLabel(mainTex, "Albedo (RGB)"), mainTex, FindProperty("_Tint")
+        );
+        DoMetallic();
+        DoSmoothness();
+        DoNormals();
+        editor.TextureScaleOffsetProperty(mainTex);
+    }
+    void DoMetallic()
+    {
+        MaterialProperty slider = FindProperty("_Metallic");
+        EditorGUI.indentLevel += 2;
+        editor.ShaderProperty(slider, MakeLabel(slider));
+        EditorGUI.indentLevel -= 2;
+    }
+```
+
+**Metallic**
+
+**Smoothness**
+
+- Unity's standard shader expects smoothness to be stored in the alpha channel.
+
+- For opaque materials that don't require a metallic map, it is possible to store the smoothness in the alpha channel of the albedo map.
+
+**Emissive**
+
+- The emission is part of the material only. It doesn't affect the rest of the scene. However, Unity's global illumination system can pick up this emitted light and add it to the indirect illumination data. 
+
+![](/assets/pic/232252.png)
+
+### Occluded Areas
+
+```c++
+float GetOcclusion (Interpolators i) {
+	#if defined(_OCCLUSION_MAP)
+		return lerp(1, tex2D(_OcclusionMap, i.uv.xy).g, _OcclusionStrength);
+	#else
+		return 1;
+	#endif
+}
+```
+
+- Ambient Light
+  - As the occlusion map is based on the surface shape and not on a specific light, it makes sense that it is **only applied to indirect light**.
+  - Having said that, you'll often find games where occlusion maps are applied to direct lights as well. Unity's older shaders did this too. While that is not realistic, it does give artist **more control over lighting**.
+- Indirect Light
+- SSAO (screen-space ambient occlusion):  SSAO is a **post-processing** image effect that uses the depth buffer to create an occlusion map for an entire frame on the fly. It is used to enhance the feeling of depth in a scene. Because it is a post-processing effect, it is applied to the image after all lights have been rendered. This means that the shadowing is applied to **both the indirect and direct light**. As a result, this effect is also not realistic.
+
+**Merging Maps**
+
+- reduce memory and storage requirements
+
+We're only using one channel of the **occlusion map**, the **G channel**. The **metallic map** for circuitry is stored in the **R channel**, and the **smoothness** is stored in the **alpha channel**. This means that we could combine all three maps into **a single texture**.
+
+### Masking
+
+The details cover the entire surface, but this doesn't look so good. It's better is the details don't cover the metal parts. We could use a mask texture to **control where details show up**.
+
+![](/assets/pic/masking.gif)
+
+### Using the Keywords
+
+- Support more efficient shader variants.
+
+```c++
+		Pass {
+			Tags {
+				"LightMode" = "ForwardBase"
+			}
+
+			CGPROGRAM
+
+			#pragma target 3.0
+
+			#pragma shader_feature _METALLIC_MAP
+			#pragma shader_feature _ _SMOOTHNESS_ALBEDO _SMOOTHNESS_METALLIC
+			#pragma shader_feature _NORMAL_MAP
+			#pragma shader_feature _OCCLUSION_MAP
+			#pragma shader_feature _EMISSION_MAP
+			#pragma shader_feature _DETAIL_MASK
+			#pragma shader_feature _DETAIL_ALBEDO_MAP
+			#pragma shader_feature _DETAIL_NORMAL_MAP
+
+			#pragma multi_compile _ SHADOWS_SCREEN
+			#pragma multi_compile _ VERTEXLIGHT_ON
+
+			#pragma vertex MyVertexProgram
+			#pragma fragment MyFragmentProgram
+
+			#define FORWARD_BASE_PASS
+
+			#include "My Lighting.cginc"
+
+			ENDCG
+		}
+```
+
+![](/assets/pic/141333.png)
+
+## **Transparency**
+
+- Use a different render queue.
+- *Support semitransparent materials*
+- Combine reflections and transparency.
+
+`clip`: To abort rendering a fragment, we can use the `clip` function. If the argument of this function is negative, then the fragment will be discarded. The GPU won't blend its color, and it won't write to the depth buffer.
+
+```c++
+float4 MyFragmentProgram (Interpolators i) : SV_TARGET {
+	float alpha = GetAlpha(i);
+	#if defined(_RENDERING_CUTOUT)
+		clip(alpha - _AlphaCutoff);
+	#endif
+
+	…
+}
+```
+
+![](/assets/pic/transparency.gif)
+
+**Rendering Queue**
+
+- Opaque things are rendered first, followed by the cutout stuff. This is done because clipping is more expensive. Rendering opaque objects first means that we'll never render cutout objects that end up behind solid objects.
+
+- You can use the queue names, and also add an offset for more precise control over when objects get rendered. For example, `"Queue" = "Geometry+1"`
+
+### Semitransparent Rendering
+
+- There is no smooth transition between opaque and transparent parts of the surface. To solve this, we have to add support for another rendering mode. This mode will support semi-transparency. Unity's standard shaders name this mode ***Fade***
+
+- we should use `Blend One Zero` for the base pass, and `Blend One One` for the additive pass
+
+**Controlling ZWrite**
+
+- The depth values of invisible geometry can end up preventing otherwise visible stuff from being rendered. So we have to disable writing to the depth buffer when using the *Fade* rendering mode.
+
+![](/assets/pic/zwrite-on.png)
+
+![](/assets/pic/zwrite-off.png)
+
+### Fading vs. Transparency
+
+- Note that the entire contribution of the geometry's color is faded. Both its diffuse reflections and its specular reflections are faded. That's why it's know as *Fade* mode.
+- This mode is appropriate for many effects, but it does not correctly represent solid semitransparent surfaces. For example, glass is practically fully transparent, but it also has clear highlights and reflections.
+- The settings for *Transparent* mode are the same as for *Fade*, except that we have to be able to add reflections regardless of the alpha value. Thus, its source blend mode has to be one instead of depending on alpha.
+
+```c++
+		public static RenderingSettings[] modes = {
+			new RenderingSettings() {
+				queue = RenderQueue.Geometry,
+				renderType = "",
+				srcBlend = BlendMode.One,
+				dstBlend = BlendMode.Zero,
+				zWrite = true
+			},
+			new RenderingSettings() {
+				queue = RenderQueue.AlphaTest,
+				renderType = "TransparentCutout",
+				srcBlend = BlendMode.One,
+				dstBlend = BlendMode.Zero,
+				zWrite = true
+			},
+			new RenderingSettings() {
+				queue = RenderQueue.Transparent,
+				renderType = "Transparent",
+				srcBlend = BlendMode.SrcAlpha,
+				dstBlend = BlendMode.OneMinusSrcAlpha,
+				zWrite = false
+			},
+			new RenderingSettings() {
+				queue = RenderQueue.Transparent,
+				renderType = "Transparent",
+				srcBlend = BlendMode.One,
+				dstBlend = BlendMode.OneMinusSrcAlpha,
+				zWrite = false
+			}
+		};
+```
+
+![](/assets/pic/adjusted-alpha.png)
+
+## Water
+
+### Flowing UV
+
+`_Time.y`
+
+```c++
+#if !defined(FLOW_INCLUDED)
+#define FLOW_INCLUDED
+
+float2 FlowUV (float2 uv, float time) {
+	return uv + time;
+}
+
+#endif
+```
+
+```c++
+		#include "Flow.cginc"
+
+		sampler2D _MainTex;
+
+		…
+
+		void surf (Input IN, inout SurfaceOutputStandard o) {
+			float2 uv = FlowUV(IN.uv_MainTex, _Time.y);
+			fixed4 c = tex2D(_MainTex, uv) * _Color;
+			o.Albedo = c.rgb;
+			o.Metallic = _Metallic;
+			o.Smoothness = _Glossiness;
+			o.Alpha = c.a;
+		}
+```
+
+### FlowMap
+
+![](/assets/pic/flow-no-tiling.jpg)
+
+```c++
+		void surf (Input IN, inout SurfaceOutputStandard o) {
+			float2 flowVector = tex2D(_FlowMap, IN.uv_MainTex).rg;
+			float2 uv = FlowUV(IN.uv_MainTex, _Time.y);
+			fixed4 c = tex2D(_MainTex, uv) * _Color;
+			o.Albedo = c.rgb;
+			o.Albedo = float3(flowVector, 0);
+			…
+		}
+```
+
+- To prevent it from turning into a mess, we have to reset the animation at some point. The simplest way to do this is by only using the fractional part of the time for the animation. Thus, it progresses from 0 up to 1 as normal, but then resets to 0, forming a sawtooth pattern.
+
+```c++
+float2 FlowUV (float2 uv, float2 flowVector, float time) {
+	float progress = frac(time);
+	return uv - flowVector * progress;
+}
+```
+
+![](/assets/pic/sawtooth.png)
+
+### Seamless Looping
+
+-  If we also start with black and fade in the texture at the start, then the sudden reset happens when the entire surface is black. While this is very obvious, at least there is no sudden visual discontinuity.
+
+- w(p)=1−|1−2p|
+
+![](/assets/pic/triangle.png)
+
+**Time Offset**
+
+It might be less obvious if we could spread it out over time. We can do this by offsetting the time by a varying amount across the surface.
+
+```c++
+			float2 flowVector = tex2D(_FlowMap, IN.uv_MainTex).rg * 2 - 1;
+			float noise = tex2D(_FlowMap, IN.uv_MainTex).a;
+			float time = _Time.y + noise;
+			float3 uvw = FlowUVW(IN.uv_MainTex, flowVector, time);
+```
+
+### Derivative Map
+
+- A derivative map works just like a normal map, except it contains the height derivatives in the X and Y dimensions.
+- averaging normals doesn't make much sense
+- the correct approach would be to convert the normal vectors to height derivatives, add them, and then convert back to a normal vector. This is especially true for waves that travel across a surface.
+
+![](/assets/pic/water_1.gif)
+
+### Looking Through Water
+
+**Transparent Surface Shader**
+
+- remove shadows 
+  - `fillforwardshadows`: we no longer need to support any shadow type.
+  - remove `FallBack "Diffuse"`: This does not yet remove the shadows of the main directional light. Those are still added by the default diffuse shadow caster pass, which we've inherited from the diffuse fallback shader. To eliminate the shadows, remove the fallback.
+
+```c
+Tags { "RenderType"="Transparent" "Queue"="Transparent" }
+```
+
+```c++
+#pragma surface surf Standard alpha
+```
+
+#### Underwater Fog
+
+- `_CameraDepthTexture`: Unity makes the depth buffer globally available via the `_CameraDepthTexture` variable
+- The underwater depth is found by **subtracting the surface depth from the background depth**. Let's use that as our final color to see whether it is correct, scaled down so at least part of the gradient is visible.
+
+ ```c++
+ float3 ColorBelowWater (float4 screenPos) {
+ 	float2 uv = screenPos.xy / screenPos.w;
+ 
+ 	#if UNITY_UV_STARTS_AT_TOP
+ 		if (_CameraDepthTexture_TexelSize.y < 0) {
+ 			uv.y = 1 - uv.y;
+ 		}
+ 	#endif
+ 	
+ 	float backgroundDepth =
+ 		LinearEyeDepth(SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, uv));
+ 	float surfaceDepth = UNITY_Z_0_FAR_FROM_CLIPSPACE(screenPos.z);
+ 	float depthDifference = backgroundDepth - surfaceDepth;
+ 	
+ 	return depthDifference / 20;
+ }
+ ```
+
+#### Grabbing the Background
+
+To adjust the color of the background, we have to retrieve it somehow. The only way that's possible with a surface shader is by adding a grab pass. This is done by adding `GrabPass {}` before the `CGPROGRAM` block in our shader.
+
+```c++
+GrabPass { "_WaterBackground" }
+```
+
+```c++
+sampler2D _CameraDepthTexture, _WaterBackground;
+
+float3 ColorBelowWater (float4 screenPos) {
+	…
+	
+	float3 backgroundColor = tex2D(_WaterBackground, uv).rgb;
+	return backgroundColor;
+}
+```
+
+#### Applying Fog
+
+```c++
+float3 _WaterFogColor;
+float _WaterFogDensity;
+
+float3 ColorBelowWater (float4 screenPos) {
+	…
+	
+	float3 backgroundColor = tex2D(_WaterBackground, uv).rgb;
+	float fogFactor = exp2(-_WaterFogDensity * depthDifference);
+	return lerp(_WaterFogColor, backgroundColor, fogFactor);
+}
+```
+
+#### Fake Refraction
+
+Because we already use screen-space data to create the underwater fog, we'll reuse it for screen-space refractions. This allows us to add a refraction effect with little extra effort, although the result won't be realistic. 
+
+**Using the Normal Vector**
+
+```c++
+float3 ColorBelowWater (float4 screenPos, float3 tangentSpaceNormal) {
+	float2 uvOffset = tangentSpaceNormal.xy;
+	…
+}
+```
+
+**Only Refract Underwater**
+
+- We can detect whether we've hit the foreground by checking whether the depth difference that we use for the fog is negative. If so, we've sampled a fragment that's in front of the water
+
+```c++
+	float depthDifference = backgroundDepth - surfaceDepth;
+	
+	if (depthDifference < 0) {
+		uv = screenPos.xy / screenPos.w;
+		#if UNITY_UV_STARTS_AT_TOP
+			if (_CameraDepthTexture_TexelSize.y < 0) {
+				uv.y = 1 - uv.y;
+			}
+		#endif
+	}
+	
+	float3 backgroundColor = tex2D(_WaterBackground, uv).rgb;
+```
+
+![](/assets/pic/water_reflection.gif)
