@@ -1280,3 +1280,10 @@ float3 ColorBelowWater (float4 screenPos, float3 tangentSpaceNormal) {
 ```
 
 ![](/assets/pic/water_reflection.gif)
+
+## Static Lighting
+
+**Lightmapping**: if both the lights and the geometry are unchanging, then we could calculate the lighting once and reuse it. This allows use to put many lights in our scenes, without having to render them at run time. It also makes it possible to use area lights, which are not available as realtime lights.
+
+
+
