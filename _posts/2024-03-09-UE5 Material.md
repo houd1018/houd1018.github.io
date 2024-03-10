@@ -116,3 +116,20 @@ Can be done in the `SD`
 using tool like Blender
 
 ![](/assets/pic/20240310161644.png)
+
+## Scene
+
+**Exposure**
+
+auto -> manual
+
+![](/assets/pic/20240310180200.png)
+
+![](/assets/pic/20240310180336.png)
+
+### Material Blend
+
+*selection Order matters*: Base -> middle ->top
+
+![](/assets/pic/20240310183411.png)
+
