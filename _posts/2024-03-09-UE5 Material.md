@@ -72,3 +72,47 @@ typora-root-url: ..
 - Roughness
 
 ![](/assets/pic/20240310011857.png)
+
+**Compression**
+
+`Linear Color` -> no sRGB / Grey Scale Map
+
+![](/assets/pic/20240310133027.png)
+
+![](/assets/pic/20240310133338.png)
+
+### Normal
+
+**NormalMap: DX or GL**
+
+OpenGL: Unity
+
+DirectX: Unreal
+
+**Normal map -> Green Channel need to be flipped**
+
+- `FlattenNormal`: lerp normalMap with 0,0,1
+
+![](/assets/pic/20240310135148.png)
+
+### AO
+
+![](/assets/pic/20240310152650.png)
+
+### ARM/ORM - Channel Packing
+
+Can be done in the `SD`
+
+![](/assets/pic/153521.png)
+
+![](/assets/pic/20240310160616.png)
+
+![](/assets/pic/20240310160647.png)
+
+### Displacement
+
+*Can only be done outside of the UE5*
+
+using tool like Blender
+
+![](/assets/pic/20240310161644.png)
