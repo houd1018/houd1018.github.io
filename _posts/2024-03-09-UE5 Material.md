@@ -28,6 +28,7 @@ typora-root-url: ..
 
 - `Name reroutes`
 - `CheapContrast`
+- `Append`
 
 ![](/assets/pic/Dissolve.png)
 
@@ -44,3 +45,30 @@ typora-root-url: ..
 **Jumping pad**
 
 ![](/assets/pic/20240309181029.png)
+
+## Advanced Material
+
+### UV Control
+
+![](/assets/pic/20240309195836.png)
+
+### Color Control
+
+- Brightness
+- Saturation
+- Contrast
+- Tint
+
+![](/assets/pic/20240310000508.png)
+
+- Metallic
+
+![](/assets/pic/20240310004111.png)
+
+- Specular
+
+![](/assets/pic/20240310005701.png)
+
+- Roughness
+
+![](/assets/pic/20240310011857.png)
