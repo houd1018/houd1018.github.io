@@ -133,3 +133,6 @@ auto -> manual
 
 ![](/assets/pic/20240310183411.png)
 
+### Vertex Painting
+
+![](/assets/pic/20240311233538.png)
