@@ -10,6 +10,8 @@ typora-root-url: ..
 
 Unity Buit-in Pipeline
 
+[Built-in shader variables](https://docs.unity3d.com/Manual/SL-UnityShaderVariables.html)
+
 ## Outline
 
 - post-processing
@@ -19,9 +21,12 @@ Unity Buit-in Pipeline
 **Back facing**
 
 - vertex -> move with dir of normal
+
 - cull front
 
 - 法线变换到投影空间要乘以transform的转置逆再乘projection矩阵，这样法线不会受到非等比缩放的影响 -> 保证outline不会随着camera变粗细
+
+  https://carmencincotti.com/2022-05-02/homogeneous-coordinates-clip-space-ndc/
 
 ```c#
 float3 viewNormal = mul((float3x3)UNITY_MATRIX_IT_MV, v.normal.xyz);
@@ -190,4 +195,90 @@ Shader "Unlit/Ouline"
     }
 }
 ```
+
+![](/assets/pic/20240326203042.png)
+
+## Shade
+
+**Celluloid Style** - **双色阶的渲染** - **Lambert**
+
+- *实现明暗边界分明的光照，并且单独设置明面和暗面的颜色来区分色调*
+- smoothstep + lerp 柔化明暗边界  / 或者使用**Ramp贴图
+
+```c#
+        Pass
+        {
+            Tags { "LightMode" = "ForwardBase" }
+            Cull Back
+            CGPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            
+            #include "UnityCG.cginc"
+            #include "Lighting.cginc"
+            #include "AutoLight.cginc"
+
+            sampler2D _MainTex;
+            float4 _MainTex_ST;
+            half3 _MainColor;
+            half3 _ShadowColor;
+            half _ShadowRange;
+
+            struct a2v
+            {
+                float4 vertex : POSITION;
+                float3 normal : NORMAL;
+                float2 uv : TEXCOORD0;
+            };
+
+            struct v2f
+            {
+                float4 pos : SV_POSITION;
+                float2 uv : TEXCOORD0;
+                float3 worldNormal : TEXCOORD1;
+                float3 worldPos : TEXCOORD2;
+            };
+
+
+            v2f vert(a2v v)
+            {
+                v2f o;
+                UNITY_INITIALIZE_OUTPUT(v2f, o);
+                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
+                o.worldNormal = UnityObjectToWorldNormal(v.normal);
+                o.worldPos = mul(unity_ObjectToWorld, v.vertex).xyz;
+                o.pos = UnityObjectToClipPos(v.vertex);
+                return o;
+            }
+
+            half4 frag(v2f i) : SV_TARGET
+            {
+              	half4 col = 1;
+                half4 mainTex = tex2D(_MainTex, i.uv);
+                half3 viewDir = normalize(_WorldSpaceCameraPos.xyz - i.worldPos.xyz);
+                half3 worldNormal = normalize(i.worldNormal);
+                half3 worldLightDir = normalize(_WorldSpaceLightPos0.xyz);
+
+                // [-1,1] -> [0,1]
+                half halfLambert = dot(worldNormal, worldLightDir) * 0.5 + 0.5;
+
+                // 双色阶
+                half3 diffuse = halfLambert > _ShadowRange ? _MainColor : _ShadowColor;
+                diffuse *= mainTex;
+                col.rgb = _LightColor0 * diffuse;
+                return col;
+            }
+            ENDCG
+        }
+```
+
+## RimLight & Bloom
+
+
+
+## Misc
+
+` struct a2v`: Model Space
+
+` struct v2f`: Clip Space (Default)
 
