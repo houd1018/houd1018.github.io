@@ -206,54 +206,7 @@ Shader "Unlit/Ouline"
 - smoothstep + lerp 柔化明暗边界  / 或者使用**Ramp贴图
 
 ```c#
-        Pass
-        {
-            Tags { "LightMode" = "ForwardBase" }
-            Cull Back
-            CGPROGRAM
-            #pragma vertex vert
-            #pragma fragment frag
-            
-            #include "UnityCG.cginc"
-            #include "Lighting.cginc"
-            #include "AutoLight.cginc"
-
-            sampler2D _MainTex;
-            float4 _MainTex_ST;
-            half3 _MainColor;
-            half3 _ShadowColor;
-            half _ShadowRange;
-
-            struct a2v
-            {
-                float4 vertex : POSITION;
-                float3 normal : NORMAL;
-                float2 uv : TEXCOORD0;
-            };
-
-            struct v2f
-            {
-                float4 pos : SV_POSITION;
-                float2 uv : TEXCOORD0;
-                float3 worldNormal : TEXCOORD1;
-                float3 worldPos : TEXCOORD2;
-            };
-
-
-            v2f vert(a2v v)
-            {
-                v2f o;
-                UNITY_INITIALIZE_OUTPUT(v2f, o);
-                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
-                o.worldNormal = UnityObjectToWorldNormal(v.normal);
-                o.worldPos = mul(unity_ObjectToWorld, v.vertex).xyz;
-                o.pos = UnityObjectToClipPos(v.vertex);
-                return o;
-            }
-
-            half4 frag(v2f i) : SV_TARGET
-            {
-              	half4 col = 1;
+                half4 col = 1;
                 half4 mainTex = tex2D(_MainTex, i.uv);
                 half3 viewDir = normalize(_WorldSpaceCameraPos.xyz - i.worldPos.xyz);
                 half3 worldNormal = normalize(i.worldNormal);
@@ -262,19 +215,35 @@ Shader "Unlit/Ouline"
                 // [-1,1] -> [0,1]
                 half halfLambert = dot(worldNormal, worldLightDir) * 0.5 + 0.5;
 
+                // halfLambert - _ShadowRange > 0 -> 是受光面 -> 开始缓和
+                // half3 diffuse = halfLambert > _ShadowRange ? _MainColor : _ShadowColor;
+                // smoothstep 在edge0外 -> 0 在edge1外 -> 1
+                half ramp = smoothstep(0, _ShadowSmooth, halfLambert - _ShadowRange);
+                
                 // 双色阶
-                half3 diffuse = halfLambert > _ShadowRange ? _MainColor : _ShadowColor;
-                diffuse *= mainTex;
-                col.rgb = _LightColor0 * diffuse;
-                return col;
-            }
-            ENDCG
-        }
+                // 只在 halfLambert - _ShadowRange的值在（0, _ShadowSmooth）内lerp，其余是0和1
+                half3 diffuse = lerp(_ShadowColor, _MainColor, ramp);
+                diffuse *= mainTex.rgb;
 ```
 
 ## RimLight & Bloom
 
+- Rimlight = 1.0 - saturate(dot(viewDir, worldNormal)) -> `fresnel`
+- bloom的曝光主要集中在光照方向，边缘光的部分。将边缘光乘以漫反射公式，来获得比较符合光照方向边缘光。将它的值赋给Alpha通道。
 
+```c#
+                // rim light
+                half f = 1.0 - saturate(dot(viewDir, worldNormal));
+                half3 rimColor = f * _rimColor.rgb * _rimColor.a;
+                half rim = smoothstep(_RimMin, _RimMax, f);
+                rim = smoothstep(0, _RimSmooth, rim);
+
+                // Bloom
+                half NdotL = max(0, dot(worldNormal, worldLightDir));
+                half rimBloom = pow(f, _RimBloomExp) * _RimBloomMulti * NdotL;
+```
+
+![](/assets/pic/20240326230105.png)
 
 ## Misc
 
