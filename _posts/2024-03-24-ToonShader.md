@@ -392,7 +392,7 @@ public class ToonStencil : MonoBehaviour
 
 ![](/assets/pic/20240401204514.png)
 
-#### ShowRamp Generator Tool
+### ShowRamp Generator Tool
 
 ```c#
 using System.Collections;
