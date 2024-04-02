@@ -251,3 +251,253 @@ Shader "Unlit/Ouline"
 
 ` struct v2f`: Clip Space (Default)
 
+# URP
+
+## Outline
+
+- extend Normal (内部描边)
+
+```c++
+            v2f vert(appdata v)
+            {
+                v2f o;
+
+                float3 positionOS = v.positionOS;
+                positionOS += normalize(v.normalOS) * _OutlineWidth * 0.01;
+                o.positionCS = TransformObjectToHClip(positionOS);
+                return o;
+            }
+```
+
+- 等距描边宽度
+
+  ```c++
+              v2f vert(appdata v)
+              {
+                  v2f o;
+  
+                  //思路:
+                  //描边的宽度本身不会变化，只是由于我们离的远了，所以感觉是变细了//因此只需要对描边宽度乘上一个越来越大的值做为弥补即可
+                  //求出相机与顶点间的距离
+                  float3 positionWS = TransformObjectToWorld(v.positionOS);
+                  float distance = length(_WorldSpaceCameraPos - positionWS);
+                  distance = lerp(1, distance, _UniformWidth); //调整等边随视角的影响
+  				
+                  float3 positionOS = v.positionOS;
+                  float3 width = normalize(v.normalOS) * _OutlineWidth * 0.01;
+                  width *= distance;
+                  positionOS += width;
+                  o.positionCS = TransformObjectToHClip(positionOS);
+                  return o;
+              }
+  ```
+
+- Vertex Color -> 存储与模型数据中
+  - RGB -> outline Color
+  - A -> width
+
+```c++
+width *= v.color.a;
+
+
+half4 frag(v2f i) : SV_Target
+{
+	return i.color * _OutlineColor;	
+}
+```
+
+### External Outline
+
+- Zwrite -> overdraw
+
+- **Stencil**
+
+  ```c++
+              Stencil //mainTex
+              {
+                  Ref 1
+                  Comp Always
+                  Pass Replace
+              }
+        
+              Stencil  //Outline
+              {
+                  Ref 1
+                  Comp NotEqual
+              }
+  ```
+
+  先draw MainTex标记为1，写入Stencil buffer，replace -> 永远渲染
+
+  只有当mainTex以外的Outline 才画 -> not Equal, 没有被标记为1的像素
+
+  
+
+- **Render Objects**: custom "LightMode"
+
+```c++
+Tags { "LightMode" = "Outline" }
+```
+
+![](/assets/pic/20240401172952.png)
+
+![](/assets/pic/20240401173015.png)
+
+解决重叠物体间，outline消失：
+
+```c++
+public class ToonStencil : MonoBehaviour
+{
+    public int RefValue;
+    void Start()
+    {
+        var renders = GetComponentsInChildren<MeshRenderer>();
+        foreach (var r in renders)
+        {
+            r.material.SetInt("_Ref", RefValue);
+        }
+
+    }
+}
+```
+
+## 多色阶shade - ShadowRamp - **Lambert**
+
+```c++
+            half4 frag(v2f i) : SV_Target
+            {
+                half4 c;
+                half4 baseMap = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, i.uv);
+                c = baseMap * _BaseColor;
+
+                // Lambert
+                Light MainLight = GetMainLight();
+                half3 L = MainLight.direction;
+                half3 N = normalize(i.normalWS);
+                half NdotL = dot(N, L) * 0.5 + 0.5;
+
+                half4 level;
+                {
+                    
+                    level = ceil(NdotL * _Step) / _Step;
+
+                    //利用采样渐变图实现更灵活的
+                    half4 shadowRampMap = SAMPLE_TEXTURE2D(_ShadowRampMap, sampler_ShadowRampMap, NdotL);
+                    level = shadowRampMap;
+                }
+                c *= level;
+                return c;
+            }
+```
+
+![](/assets/pic/20240401204514.png)
+
+#### ShowRamp Generator Tool
+
+```c#
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEditor;
+
+[CustomEditor(typeof(GradientGenerator))]
+public class GradientGeneratorEditor : Editor
+{
+    private GradientGenerator gradientGenerator;
+
+    void OnEnable()
+    {
+        gradientGenerator = target as GradientGenerator;
+    }
+
+    public override void OnInspectorGUI()
+    {
+        base.DrawDefaultInspector();
+        if (GUILayout.Button("Generate"))
+        {
+            string path = EditorUtility.SaveFilePanel("保持纹理", "", "ShadowRampMap", "png");
+            System.IO.File.WriteAllBytes(path, gradientGenerator.RampTexture.EncodeToPNG());
+        }
+
+    }
+}
+
+```
+
+```c#
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class GradientGenerator : MonoBehaviour
+{
+    public Gradient GradientRamp;
+    public Texture2D RampTexture;
+
+
+
+
+    void OnValidate()
+    {
+        //创建一家纹理图
+        RampTexture = new Texture2D(128, 1);
+        RampTexture.wrapMode = TextureWrapMode.Clamp;
+        RampTexture.filterMode = FilterMode.Bilinear;
+        int count = RampTexture.width * RampTexture.height;
+        //为纹理图声明相对应相除数量的颜色数组
+        Color[] cols = new Color[count];
+        for (int i = 0; i < count; i++)
+        {
+            cols[i] = GradientRamp.Evaluate((float)i / count);
+        }
+
+
+
+        RampTexture.SetPixels(cols);
+        RampTexture.Apply();
+
+        Shader.SetGlobalTexture("_ShadowRampMap", RampTexture);
+    }
+
+}
+
+
+```
+
+![](/assets/pic/20240401203004.png)
+
+
+
+## Specular
+
+```c++
+                half4 specular;
+                {
+                    half3 H = normalize(L + V);
+                    half NdotH = dot(N, H);
+                    specular = _Specular.x * pow(NdotH, _Specular.y);
+                    specular = smoothstep(0.5, 0.5 + _Specular.z, specular);
+                    specular *= _Specular.w;
+                    c += specular;
+                }
+```
+
+
+
+![](/assets/pic/20240401205034.png)
+
+### RimLight
+
+```c#
+                half4 fresnel;
+                {
+                    half NdotV = 1 - saturate(dot(N, V));
+                    fresnel = _Fresnel.x * pow(NdotV, _Fresnel.y);
+                    fresnel = smoothstep(0.5, 0.5 + _Fresnel.z, fresnel);
+                    fresnel *= fresnel.w;
+                    fresnel *= _FresnelColor;
+                    c += fresnel;
+                }
+```
+
+![](/assets/pic/20240401210035.png)
