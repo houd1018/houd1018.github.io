@@ -4,6 +4,7 @@ date: 2023-11-16 23:00:00 -800
 categories: [Shader]
 tags: [unity, shader, rendering, CG]    # TAG names should always be lowercase
 math: true
+typora-root-url: ..
 ---
 
 # CatlikeCoding
@@ -1287,3 +1288,16 @@ float3 ColorBelowWater (float4 screenPos, float3 tangentSpaceNormal) {
 
 
 
+## **Flat and Wireframe Shading**
+
+### Geometry Shaders
+
+![](/assets/pic/shader-programs.png)The added value of the --- -   
+
+```c++
+#pragma geometry MyGeometryProgram
+```
+
+- Geometry shader is that the vertices are fed to it per primitive, so three for each triangle in our case. Whether mesh triangles share vertices doesn't matter, because the geometry program outputs new vertex data. This allows us to derive the triangle's normal vector and use it as the normal for all three vertices.
+
+- Geometry shaders are only supported when targeting shader model 4.0 or higher
