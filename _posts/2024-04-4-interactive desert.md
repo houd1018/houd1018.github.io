@@ -180,3 +180,213 @@ float4 tex2Dlod(sampler2D s, float4 coord)
 ```
 
 `coord.w`用于指定想要采样的Mipmap级别。`coord.z`在大多数情况下用不到，可以设置为0。
+
+## Interactive Mesh
+
+- `RenderTexture`
+- `orthographic camera`
+- `particle system` on **a layer that only the orthographic camera can see**
+
+![](/assets/pic/Sand.gif)
+
+![](/assets/pic/1 (1).gif)
+
+![](/assets/pic/20240410030138.png)
+
+### Varying
+
+- read RenderTexture in correct UV
+- worldPosition.xz - _Position.xz: get relative distance to the object -> (0,1)
+
+```c++
+    //create local uv
+    float2 uv = worldPosition.xz - _Position.xz;
+    uv = uv / (_OrthographicCamSize * 2);
+    uv += 0.5;
+
+    // Effects RenderTexture Reading
+    float4 RTEffect = tex2Dlod(_GlobalEffectRT, float4(uv, 0, 0));
+    // smoothstep to prevent bleeding
+   	RTEffect *=  smoothstep(0.99, 0.9, uv.x) * smoothstep(0.99, 0.9,1- uv.x);
+	RTEffect *=  smoothstep(0.99, 0.9, uv.y) * smoothstep(0.99, 0.9,1- uv.y);
+```
+
+- Get noise map in world space -> move vertex
+- set particle system as green -> RTEffect.g
+- **Move Vertices with the guide of normal** (exclude path: 1-(RTEffect.g * _SnowDepth))
+
+```c++
+    // worldspace noise texture
+    float SnowNoise = tex2Dlod(_Noise, float4(worldPosition.xz * _NoiseScale, 0, 0)).r;
+    output.viewDir = SafeNormalize(GetCameraPositionWS() - worldPosition);
+
+	// important: move vertices up where snow is
+	input.vertex.xyz += SafeNormalize(input.normal) * saturate(( _SnowHeight) + (SnowNoise * _NoiseWeight)) * saturate(1-(RTEffect.g * _SnowDepth));
+```
+
+### Frag
+
+- 因为是俯视图，所以要乘上worldPos.xz
+
+```c++
+                // worldspace Noise texture
+                float3 topdownNoise = tex2D(_Noise, IN.worldPos.xz * _NoiseScale).rgb;
+
+                // worldspace Snow texture
+                float3 snowtexture = tex2D(_MainTex, IN.worldPos.xz * _SnowTextureScale).rgb;
+                
+```
+
+- color the path
+
+```c++
+                //lerp between snow color and snow texture
+                float3 snowTex = lerp(_Color.rgb,snowtexture * _Color.rgb, _SnowTextureOpacity);
+                
+                //lerp the colors using the RT effect path 
+                float3 path = lerp(_PathColorOut.rgb * effect.g, _PathColorIn.rgb, saturate(effect.g * _PathBlending)); // depth
+                float3 mainColors = lerp(snowTex,path, saturate(effect.g));
+
+```
+
+- Multiple Light
+
+```c++
+                // extra point lights support
+                float3 extraLights;
+                int pixelLightCount = GetAdditionalLightsCount();
+                for (int j = 0; j < pixelLightCount; ++j) {
+                    Light light = GetAdditionalLight(j, IN.worldPos, half4(1, 1, 1, 1));
+                    float3 attenuatedLightColor = light.color * (light.distanceAttenuation * light.shadowAttenuation);
+                    extraLights += attenuatedLightColor;			
+                }
+
+                float4 litMainColors = float4(mainColors,1) ;
+                extraLights *= litMainColors.rgb;
+```
+
+- Sparkle from sparkle noise map
+
+  ```c++
+                  // add in the sparkles
+                  float sparklesStatic = tex2D(_SparkleNoise, IN.worldPos.xz * _SparkleScale).r;
+                  float cutoffSparkles = step(_SparkCutoff,sparklesStatic);				
+                  litMainColors += cutoffSparkles  *saturate(1- (effect.g * 2)) * 4;
+  ```
+
+- rim light based on noise map height
+
+  ```c++
+                  // add rim light
+                  half rim = dot((IN.viewDir), IN.normal) * topdownNoise.r;
+                  litMainColors += _RimColor * pow(abs(rim), _RimPower);
+  ```
+
+- Blend all ambient and main light color
+
+```c++
+                // ambient and mainlight colors added
+                half4 extraColors;
+                extraColors.rgb = litMainColors.rgb * mainLight.color.rgb * (shadow + unity_AmbientSky.rgb);
+                extraColors.a = 1;   
+```
+
+### Shadow
+
+```c#
+    #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
+    #pragma multi_compile _ _ADDITIONAL_LIGHT_SHADOWS
+    #pragma multi_compile _ _SHADOWS_SOFT
+```
+
+**Receive: varying**
+
+```c++
+    // transform to clip space
+    #ifdef SHADERPASS_SHADOWCASTER
+        output.vertex = GetShadowPositionHClip(input);
+    #else
+        output.vertex = TransformObjectToHClip(input.vertex.xyz);
+    #endif
+```
+
+**Receive: frag**
+
+```c++
+    // lighting and shadow information
+    float shadow = 0;
+
+	// 通过世界坐标获取阴影坐标位置
+    half4 shadowCoord = TransformWorldToShadowCoord(IN.worldPos);
+
+    #if _MAIN_LIGHT_SHADOWS_CASCADE || _MAIN_LIGHT_SHADOWS
+        Light mainLight = GetMainLight(shadowCoord);
+        shadow = mainLight.shadowAttenuation;
+    #else
+        Light mainLight = GetMainLight();
+    #endif
+```
+
+```c#
+    // colored shadows
+    float3 coloredShadows = (shadow + (_ShadowColor.rgb * (1-shadow)));
+    litMainColors.rgb = litMainColors.rgb * mainLight.color * (coloredShadows);
+```
+
+**Cast**
+
+```c++
+// 变化vertex位置 & 避免摩尔纹 -》 稍后创建一个深度贴图 用于计算阴影
+float4 GetShadowPositionHClip(Attributes input)
+{
+    float3 positionWS = TransformObjectToWorld(input.vertex.xyz);
+    float3 normalWS = TransformObjectToWorldNormal(input.normal);
+ 
+    float4 positionCS = TransformWorldToHClip(ApplyShadowBias(positionWS, normalWS, 0));
+ 
+    #if UNITY_REVERSED_Z
+        positionCS.z = min(positionCS.z, positionCS.w * UNITY_NEAR_CLIP_VALUE);
+    #else
+        positionCS.z = max(positionCS.z, positionCS.w * UNITY_NEAR_CLIP_VALUE);
+    #endif
+        return positionCS;
+}
+    
+    
+    // transform to clip space
+    #ifdef SHADERPASS_SHADOWCASTER
+        output.vertex = GetShadowPositionHClip(input);
+    #else
+        output.vertex = TransformObjectToHClip(input.vertex.xyz);
+    #endif
+```
+
+```c++
+        // Shadow Casting Pass
+        Pass
+        {
+            	Name "ShadowCaster"
+            	Tags { "LightMode" = "ShadowCaster" }
+            	ZWrite On
+            	ZTest LEqual
+            	Cull Off
+            
+            	HLSLPROGRAM
+            	#pragma target 3.0
+            
+            	// Support all the various light  ypes and shadow paths
+            	#pragma multi_compile_shadowcaster
+            
+            	// Register our functions
+            
+            	#pragma fragment frag
+            	// A custom keyword to modify logic during the shadow caster pass
+
+            	half4 frag(Varyings IN) : SV_Target{
+                		return 0;
+            	}
+            
+            	ENDHLSL
+        }
+```
+
