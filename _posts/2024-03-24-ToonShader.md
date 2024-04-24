@@ -308,6 +308,10 @@ half4 frag(v2f i) : SV_Target
 }
 ```
 
+- 使用houdini平滑法线，将平滑法线信息写入切线空间，保持skinnmesh动画随之变化
+
+![](/assets/pic/微信截图_20240424192008.png)
+
 ### External Outline
 
 - Zwrite -> overdraw
