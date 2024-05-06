@@ -8,7 +8,7 @@ typora-root-url: ..
 
 # Houdini_intro
 
-## Flower Tube - Attributes / Geometry / UV
+## Roll Tube - Attributes / Geometry / UV
 
 ### Base
 
