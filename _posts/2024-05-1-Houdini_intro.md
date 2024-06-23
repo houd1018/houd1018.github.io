@@ -222,3 +222,25 @@ v@N = set(x,y,z);
   - sweep
 
   ![](/assets/pic/20240505221014.png)
+
+## Rock Generation
+
+**low poly rock**
+
+- `Scatter`: make it to points-> `voronoifaracture`: make random division
+- matchsize: make each piece in the center
+
+![](/assets/pic/rock.gif)
+
+**high poly rock**
+
+![](/assets/pic/rockhigh.gif)
+
+- uv: reserve the original uv info
+- remesh: make more division
+- mountain: deform
+- mesh_sharpen: modify the iteration -> make it rough 
+- edge_damage: `method: boolean` ->  sharpen some edges
+- vop: random color `cd` -> random greyscale
+
+![](/assets/pic/20240622183140.png)
