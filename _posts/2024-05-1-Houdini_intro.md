@@ -244,3 +244,24 @@ v@N = set(x,y,z);
 - vop: random color `cd` -> random greyscale
 
 ![](/assets/pic/20240622183140.png)
+
+## Rails
+
+![](/assets/pic/rail.gif)
+
+**Facet**: Clean up points. Make sure every line only has two points as endpoints
+
+**resample**: Treat polygons as Subdivision Curves -> set up points evenly
+
+**Convertline**: take lines into primitives
+
+Instance model in different size based on line's length
+
+![](/assets/pic/164442.png)
+
+`primitivesplit1` + `primitiveProperty` -> sacle = 0: get the middle point of the primitives
+![](/assets/pic/170752.png)
+
+
+**Divide different property -> uniform scale**: maintian the scale in the wrangle
+![](/assets/pic/104207.png)
