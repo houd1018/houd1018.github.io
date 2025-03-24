@@ -1347,6 +1347,11 @@ void surf (Input IN, inout SurfaceOutput o) {
 
 ![](/assets/pic/plasma.gif)
 
+## Ray Marching
+![](/assets/pic/150842.png)
+- _WorldSpaceCameraPos.
+- the world position of the pixel that will be defined by **i.wPos**
+- Depth: in this case radius and center
 
 
 ## Misc
