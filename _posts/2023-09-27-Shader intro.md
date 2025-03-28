@@ -1353,6 +1353,299 @@ void surf (Input IN, inout SurfaceOutput o) {
 - the world position of the pixel that will be defined by **i.wPos**
 - Depth: in this case radius and center
 
+```c++
+            v2f vert (appdata v)
+            {
+                v2f o;
+                o.pos = UnityObjectToClipPos(v.vertex);
+                o.wPos = mul(unity_ObjectToWorld, v.vertex).xyz;
+          
+                return o;
+            }
+            
+            #define STEPS 128
+            #define STEP_SIZE 0.01
+            
+            bool SphereHit(float3 p, float3 centre, float radius)
+            {
+                return distance(p, centre) < radius;
+            }
+            // actually didn't start at cam, start from the mesh's world position
+            float3 RaymarchHit(float3 position, float3 direction)
+            {
+                for(int i = 0; i < STEPS; i++)
+                {
+                    if ( SphereHit(position, float3(0,0,0), 0.5))
+                        return position;
+                        
+                    position += direction * STEP_SIZE;
+                }
+                
+                return float3(0,0,0);
+                
+            }
+
+            fixed4 frag (v2f i) : SV_Target
+            {
+                float3 viewDirection = normalize(i.wPos - _WorldSpaceCameraPos);
+                float3 worldPosition = i.wPos;
+                float3 depth = RaymarchHit(worldPosition, viewDirection);
+                
+                half3 worldNormal = depth - float3(0,0,0);
+                half nl = max(0, dot(worldNormal, _WorldSpaceLightPos0.xyz));
+                
+                if(length(depth) != 0)
+                {
+                    depth *= nl * _LightColor0 * 2;
+                    return fixed4(depth, 1);
+                }
+                else
+                    return fixed4(1,1,1,0);
+            }
+```
+### Fog
+![](/assets/pic/2025-03-25111537.png)
+![](/assets/pic/2025-03-25111852.png)
+ ```c++
+             float CalculatFogIntensity(
+                float3 sphereCentre,
+                float sphereRadius,
+                float innerRatio,
+                float density,
+                float3 cameraPosition,
+                float3 viewDirection,
+                float maxDistance )
+                {
+                
+                    //calculate ray-sphere intersection
+                    float3 localCam = cameraPosition - sphereCentre;
+                    float a = dot (viewDirection, viewDirection);
+                    float b = 2 * dot (viewDirection, localCam);
+                    float c = dot(localCam, localCam) - sphereRadius * sphereRadius;
+                    float d = b * b - 4 * a * c;
+                    
+                    if(d <= 0.0f)
+                        return 0;
+
+                    // there is no negative distance when cam is within the cube 
+                    float DSqrt = sqrt(d);
+                    float dist = max(( -b - DSqrt)/2*a, 0);
+                    float dist2 = max (( -b + DSqrt)/2*a, 0);
+                    
+                    // dist2 might not exisit when cam is within the volume
+                    float backDepth = min (maxDistance, dist2);
+                    float sample = dist;
+                    float step_distance = (backDepth - dist)/ 10;
+                    float step_contribution = density;
+                    
+                    // fog general density tendency in sphere
+                    float centerValue = 1/(1 - innerRatio);
+                    
+                    float clarity = 1;
+                    for( int seg = 0; seg < 10; seg++)
+                    {
+                        float3 position = localCam + viewDirection * sample;
+                        // updated density value 
+                        float val = saturate(centerValue * (1 - length(position)/sphereRadius));
+                        float fog_amount = saturate(val * step_contribution);
+                        clarity *= (1 - fog_amount);
+                        sample += step_distance;
+                    }
+                    return 1 - clarity;
+                
+                }
+ ```
+
+ ```c++
+             v2f vert (appdata_base v)
+            {
+                v2f o;
+                float4 wPos = mul(unity_ObjectToWorld, v.vertex);
+                o.pos = UnityObjectToClipPos(v.vertex);
+                o.view = wPos.xyz - _WorldSpaceCameraPos;
+                o.projPos = ComputeScreenPos(o.pos);
+                
+                // when cam is within the volume, make sure vertex behind the cam is still 0 (rendered)
+                float inFrontOf = (o.pos.z/o.pos.w) > 0;
+                o.pos.z *= inFrontOf;
+                
+                return o;
+            }
+
+            fixed4 frag (v2f i) : SV_Target
+            {
+                half4 color = half4 (1,1,1,1);
+
+                // special case: if there is an opaque object within the cube
+                // the distance between current pixel and cam -> take this as maxDist
+                // because this is a transparent cube, so the _CameraDepthTexture is come from the clost Opaque object behind / within the cube.
+                float depth = LinearEyeDepth (UNITY_SAMPLE_DEPTH (tex2Dproj(_CameraDepthTexture, UNITY_PROJ_COORD (i.projPos))));
+                float3 viewDir = normalize (i.view);
+
+                float fog = CalculatFogIntensity (
+                    _FogCentre.xyz,
+                    _FogCentre.w,
+                    _InnerRatio,
+                    _Density,
+                    _WorldSpaceCameraPos,
+                    viewDir,
+                    depth);
+
+                color.rgb = _FogColor.rgb;
+                //take the fog intensity as alpha
+                color.a = fog;
+                return color;
+
+            }
+ ```
+### 3D Value Noise -> three linear interpolation
+![](/assets/pic/2025-03-26135647.png)
+![](/assets/pic/2025-03-26175757.png)
+
+```c++
+float random(float3 value, float3 dotDir)
+{
+    float3 smallV = sin(value);
+    float random = dot(smallV, dotDir);
+    random = frac(sin(random) * 123574.43212);
+    return random;
+}
+
+float3 random3d(float3 value)
+{
+    return float3 ( random(value, float3(12.898, 68.54, 37.7298)),
+                    random(value, float3(39.898, 26.54, 85.7238)),
+                    random(value, float3(76.898, 12.54, 8.6788)));
+}
+
+float noise3d(float3 value)
+{
+    // 0-1 unit box grid is continuous, and they share points, there will still be continous between each box
+
+    // _Scale: make the sampling space bigger -> more noise details (like UV scale)
+    value *= _Scale;
+    float3 interp = frac(value); //the position in each unit grid
+    interp = smoothstep(0.0, 1.0, interp); //no harsh transition
+    
+    float3 ZValues[2];
+    for(int z = 0; z <= 1; z++)
+    {
+        float3 YValues[2];
+        for(int y = 0; y <= 1; y++)
+        {
+                float3 XValues[2];
+                for(int x = 0; x <= 1; x++)
+                {
+                    // value -> pos: starting point
+                    // cell:current index of corner from the cell
+                float3 cell = floor(value) + float3(x,y,z);
+                XValues[x] = random3d(cell); // get noise
+                }
+                YValues[y] = lerp(XValues[0], XValues[1], interp.x);
+        }
+        ZValues[z] = lerp(YValues[0], YValues[1], interp.y);
+    }
+    
+    float noise = -1.0 + 2.0 * lerp(ZValues[0], ZValues[1], interp.z);
+    return noise;
+}
+```
+### Cloud
+**Vert&frag**
+```c++
+v2f vert (appdata v)
+{
+    v2f o;
+    o.wpos = mul(unity_ObjectToWorld, v.vertex).xyz;
+    o.pos = UnityObjectToClipPos(v.vertex);
+    o.view = o.wpos - _WorldSpaceCameraPos;
+    o.projPos = ComputeScreenPos(o.pos);
+    return o;
+}
+
+fixed4 frag (v2f i) : SV_Target
+{
+    float depth = 1;
+    depth *= length(i.view);
+    fixed4 col = fixed4(1,1,1,0);
+    fixed4 clouds = raymarch( _WorldSpaceCameraPos, normalize(i.view) * _StepScale, col, depth);
+    fixed3 mixedCol = col * (1.0 - clouds.a) + clouds.rgb;
+    return fixed4(mixedCol, clouds.a);
+}
+```
+**Main ray march**
+```c++
+fixed4 raymarch(float3 cameraPos, float3 viewDir, fixed4 bgcol, float depth)
+{
+    fixed4 col = fixed4(0,0,0,0);
+    float ct = 0;
+    
+    MARCH(_Steps, map1, cameraPos, viewDir, bgcol, col, depth, ct);
+    
+    return clamp(col, 0.0, 1.0);
+}
+```
+**March**
+```c++
+#define MARCH(steps, noiseMap, cameraPos, viewDir, bgcol, sum, depth, t) { \
+    for (int i = 0; i < steps  + 1; i++) \
+    { \
+        if(t > depth) \
+            break; \
+        float3 pos = cameraPos + t * viewDir; \
+        if (pos.y < _MinHeight || pos.y > _MaxHeight || sum.a > 0.99) \
+        {\
+            t += max(0.1, 0.02*t); \
+            continue; \
+        }\
+        \
+
+
+        
+        float density = noiseMap(pos); \
+        if (density > 0.01) \
+        { \
+        // different densities based on the actual sun's direction. -> glow in the cloud
+            float diffuse = clamp((density - noiseMap(pos + 0.3 * _SunDir)) / 0.6, 0.0, 1.0);\
+            sum = integrate(sum, diffuse, density, bgcol, t); \
+        } \
+        t += max(0.1, 0.02 * t); \
+    } \
+} 
+```
+**Noise Process**
+```c++
+// make sure there is no hard cut off closing to the edge
+#define NOISEPROC(N, P) 1.75 * N * saturate((_MaxHeight - P.y)/_FadeDist) 
+
+float map1(float3 q)
+{
+    float3 p = q;
+    float f;
+    f = 0.5 * noise3d(q);
+    return NOISEPROC(f, p);
+} 
+```
+**integrate**
+
+blend pixel colors from back to front and make sure that they also fade out as far as their influence over the pixels that you're currently seeing.
+
+```c++
+fixed4 integrate(fixed4 sum, float diffuse, float density, fixed4 bgcol, float t)
+{
+    // translucent effect
+    fixed3 lighting = fixed3(0.65, 0.68, 0.7) * 1.3 + 0.5 * fixed3(0.7, 0.5, 0.3) * diffuse;
+    fixed3 colrgb = lerp( fixed3(1.0, 0.95, 0.8), fixed3(0.65, 0.65, 0.65), density);
+    fixed4 col = fixed4(colrgb.r, colrgb.g, colrgb.b, density);
+    col.rgb *= lighting;
+
+    // fog gets thick exponentially
+    col.rgb = lerp(col.rgb, bgcol, 1.0 - exp(-0.003*t*t));
+    col.a *= 0.5;
+    col.rgb *= col.a;
+    return sum + col*(1.0 - sum.a);
+}
+```
 
 ## Misc
 
