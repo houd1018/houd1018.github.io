@@ -1524,6 +1524,8 @@ float noise3d(float3 value)
 
     // _Scale: make the sampling space bigger -> more noise details (like UV scale)
     value *= _Scale;
+    // make the cloud move
+    value.x += _Time.x * 5;
     float3 interp = frac(value); //the position in each unit grid
     interp = smoothstep(0.0, 1.0, interp); //no harsh transition
     
@@ -1574,6 +1576,7 @@ fixed4 frag (v2f i) : SV_Target
 }
 ```
 **Main ray march**
+- **March** multiple times with different mappoing and depth -> getting better randomness
 ```c++
 fixed4 raymarch(float3 cameraPos, float3 viewDir, fixed4 bgcol, float depth)
 {
@@ -1581,6 +1584,10 @@ fixed4 raymarch(float3 cameraPos, float3 viewDir, fixed4 bgcol, float depth)
     float ct = 0;
     
     MARCH(_Steps, map1, cameraPos, viewDir, bgcol, col, depth, ct);
+    MARCH(_Steps, map2, cameraPos, viewDir, bgcol, col, depth*2, ct);
+    MARCH(_Steps, map3, cameraPos, viewDir, bgcol, col, depth*3, ct);
+    MARCH(_Steps, map4, cameraPos, viewDir, bgcol, col, depth*4, ct);
+    MARCH(_Steps, map5, cameraPos, viewDir, bgcol, col, depth*5, ct);
     
     return clamp(col, 0.0, 1.0);
 }
@@ -1614,21 +1621,88 @@ fixed4 raymarch(float3 cameraPos, float3 viewDir, fixed4 bgcol, float depth)
 } 
 ```
 **Noise Process**
+
+- Accumulate noises -> clouds getting blotchy -> natural
+- More **March** and maps accumulated -> improve randomness
 ```c++
 // make sure there is no hard cut off closing to the edge
-#define NOISEPROC(N, P) 1.75 * N * saturate((_MaxHeight - P.y)/_FadeDist) 
-
-float map1(float3 q)
-{
-    float3 p = q;
-    float f;
-    f = 0.5 * noise3d(q);
-    return NOISEPROC(f, p);
-} 
+            #define NOISEPROC(N, P) 1.75 * N * saturate((_MaxHeight - P.y)/_FadeDist) 
+            
+            float map5(float3 q)
+            {
+                float3 p = q;
+                float f;
+                f = 0.5 * noise3d(q);
+                q = q * 2;
+                f += 0.25 * noise3d(q);
+                q = q * 3;
+                f += 0.125 * noise3d(q);
+                q = q * 4;
+                f += 0.06250 * noise3d(q);
+                q = q * 5;
+                f += 0.03125 * noise3d(q);
+                q = q * 6;
+                f += 0.015625 * noise3d(q);
+                return NOISEPROC(f, p);
+            } 
+            
+            float map4(float3 q)
+            {
+                float3 p = q;
+                float f;
+                f = 0.5 * noise3d(q);
+                q = q * 2;
+                f += 0.25 * noise3d(q);
+                q = q * 3;
+                f += 0.125 * noise3d(q);
+                q = q * 4;
+                f += 0.06250 * noise3d(q);
+                q = q * 5;
+                f += 0.03125 * noise3d(q);
+                return NOISEPROC(f, p);
+            } 
+            
+            float map3(float3 q)
+            {
+                float3 p = q;
+                float f;
+                f = 0.5 * noise3d(q);
+                q = q * 2;
+                f += 0.25 * noise3d(q);
+                q = q * 3;
+                f += 0.125 * noise3d(q);
+                q = q * 4;
+                f += 0.06250 * noise3d(q);
+                return NOISEPROC(f, p);
+            } 
+            
+            float map2(float3 q)
+            {
+                float3 p = q;
+                float f;
+                f = 0.5 * noise3d(q);
+                q = q * 2;
+                f += 0.25 * noise3d(q);
+                q = q * 3;
+                f += 0.125 * noise3d(q);
+                return NOISEPROC(f, p);
+            } 
+            
+            
+            float map1(float3 q)
+            {
+                float3 p = q;
+                float f;
+                f = 0.5 * noise3d(q);
+                q = q * 2;
+                f += 0.25 * noise3d(q);
+                return NOISEPROC(f, p);
+            }   
 ```
 **integrate**
 
-blend pixel colors from back to front and make sure that they also fade out as far as their influence over the pixels that you're currently seeing.
+- blend pixel colors from back to front and make sure that they also fade out as far as their influence over the pixels that you're currently seeing.
+- get translucent effect(color deepen) when getting closer
 
 ```c++
 fixed4 integrate(fixed4 sum, float diffuse, float density, fixed4 bgcol, float t)
