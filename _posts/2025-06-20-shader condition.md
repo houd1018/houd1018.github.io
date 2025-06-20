@@ -1,6 +1,6 @@
 ---
 title: shader condition
-date: 2025-06-20 01:00:00 -800
+date: 2025-06-19 01:00:00 -800
 categories: [Shader]
 tags: [shader]    # TAG names should always be lowercase
 typora-root-url: ..
