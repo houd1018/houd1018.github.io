@@ -25,3 +25,17 @@ package-lock.json
 # Misc
 _sass/vendors
 assets/js/dist
+
+# Media is hosted on Cloudflare R2 / CDN, never in Git
+uploads/
+cleaned_media/
+*.mp4
+*.mov
+*.webm
+*.m4v
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+migration_report.json

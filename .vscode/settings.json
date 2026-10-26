@@ -1,4 +1,7 @@
 {
+  // GitHub Copilot: .github/copilot-instructions.md, .github/instructions/*.instructions.md, .github/prompts/*.prompt.md
+  "github.copilot.chat.codeGeneration.useInstructionFiles": true,
+  "chat.promptFiles": true,
   // Prettier
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "editor.formatOnSave": true,
