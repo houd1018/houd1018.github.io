@@ -163,32 +163,44 @@
 /* ---------- About ---------- */
 
 .about {
-  display: grid;
-  gap: 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
   align-items: center;
-  max-width: 960px;
+  max-width: 860px;
   margin: 0 auto;
+  text-align: center;
 }
 
-@media (min-width: 760px) {
+@media (min-width: 640px) {
   .about {
-    grid-template-columns: minmax(220px, 320px) 1fr;
+    flex-direction: row;
+    gap: 32px;
+    text-align: left;
   }
 }
 
 .about-photo {
-  width: 100%;
-  max-width: 320px;
-  margin: 0 auto;
-  aspect-ratio: 713 / 828;
-  border-radius: var(--radius);
+  flex: none;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
   background: var(--card-bg);
   object-fit: cover;
+  box-shadow: var(--shadow);
 }
 
 .about-text p {
-  margin: 0 0 1em;
+  margin: 0;
   font-size: 1.05rem;
+}
+
+#about {
+  padding-bottom: 0;
+}
+
+#about .section-header {
+  margin-bottom: 22px;
 }
 
 /* ---------- Projects grid ---------- */
