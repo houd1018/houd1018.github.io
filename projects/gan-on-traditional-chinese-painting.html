@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GAN on Traditional Chinese Painting | Dazhou Hou</title>
+  <meta name="description" content="AI - style transferred &amp; colored &amp; generated traditional Chinese paintings using Generative Adversarial Networks" />
+  <script src="../config.js"></script>
+  <link rel="icon" href="../assets/img/favicons/favicon.ico" />
+  <link rel="stylesheet" href="../css/base.css" />
+  <link rel="stylesheet" href="../css/content.css" />
+</head>
+<body class="page-content" data-project="gan-on-traditional-chinese-painting">
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <a class="site-brand" href="../index.html">Dazhou Hou</a>
+    <nav class="site-nav" aria-label="Primary">
+      <a href="../index.html">Home</a>
+      <a href="../index.html#about">About Me</a>
+      <a href="index.html" aria-current="page">Projects</a>
+      <a href="../blog/index.html">Blog</a>
+      <a href="../index.html#contact">Contact</a>
+    </nav>
+  </header>
+
+  <section class="page-hero content-header">
+    <p class="content-category">Creative Coding</p>
+    <h1>GAN on Traditional Chinese Painting</h1>
+      <p class="content-subtitle">AI - style transferred &amp; colored &amp; generated traditional Chinese paintings using Generative Adversarial Networks</p>
+  </section>
+
+  <main id="main" class="content prose">
+    <p><em>2022 Spring</em></p>
+    <h2>Motivation</h2>
+    <p>The project is inspired by the <a href="https://arxiv.org/abs/2011.05552"><strong>work</strong></a> of Alice Xue, paper in WACV 2021.</p>
+    <p>In recent years, AI art has been one of the newest developments in the field with a variety of cutting-edge tools. Nowadays, AI art can transfer the style of one image to another, create new paintings, restore old pictures, improve the resolution of videos, etc. With that, and to some extent, AI has proven its ability to be creative via generating new samples that have not been seen before.  Therefore, we aim in this project to study several deep learning models to create new Chinese paintings. We plan to improve the traditional AI art architecture based on Generative Adversarial Network (GAN).</p>
+    <p>I Implemented different GAN variants on Chinese paintings and tried <a href="https://github.com/CompVis/stable-diffusion"><strong>stable diffusion</strong></a> on style transfer.</p>
+    <ul><li>
+    <ul><li>
+    <ul><li>
+    <ul><li><strong>DCGAN</strong></li><li><strong>WGAN-GP</strong></li><li><strong>CycleGAN</strong></li><li><strong>SAPGAN: Sketch-And-Paint GAN</strong></li></ul>
+    </li></ul>
+    </li></ul>
+    </li></ul>
+    <p>The full project can be found <a href="https://github.com/houd1018/GAN-ChinesePainting"><strong>here</strong></a>.</p>
+    <h2>DCGAN</h2>
+    <figure class="media-figure"><img data-media-src="2022/10/DCGAN_1.gif" alt="DCGAN 1" loading="lazy"></figure>
+    <h2>WGAN-GP</h2>
+    <figure class="media-figure"><img data-media-src="2022/10/WGAN-GP.png" alt="WGAN GP" loading="lazy"></figure>
+    <h2>CycleGAN - style transfer &amp; coloring</h2>
+    <p><a data-media-href="2022/10/Figure_2.png"> </a> <a data-media-href="2022/10/Figure_3.png"> </a> <a data-media-href="2022/10/Figure_4.png"> </a> <a data-media-href="2022/10/Figure_1.png"> </a></p>
+    <h2>SAPGAN: Sketch-And-Paint GAN</h2>
+    <figure class="media-figure"><img data-media-src="2023/01/763z0r.gif" alt="763z0r" loading="lazy"></figure>
+    <h2>Stable Diffusion - style transfer<br></h2>
+    <div class="gif-grid gif-grid--2">
+    <figure><img data-media-src="2022/10/landscape-1.png" alt="landscape 1" loading="lazy"></figure>
+    <figure><img data-media-src="2022/10/stable-diffusion.gif" alt="stable diffusion" loading="lazy"></figure>
+    </div>
+    <p class="back-link"><a href="index.html">&larr; All projects</a></p>
+  </main>
+
+  <footer class="site-footer">
+    &copy; Dazhou Hou &middot;
+    <a href="https://github.com/houd1018" target="_blank" rel="noopener noreferrer">GitHub</a>
+  </footer>
+
+  <script src="../data/projects.js"></script>
+  <script src="../js/lightbox.js"></script>
+  <script src="../js/content.js"></script>
+</body>
+</html>

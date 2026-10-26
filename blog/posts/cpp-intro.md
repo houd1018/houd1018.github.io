@@ -1,0 +1,750 @@
+## intro
+### Constants
+
+```cpp
+const int myNum = 15;  // myNum will always be 15
+myNum = 10;  // error: assignment of read-only variable 'myNum'
+```
+
+### C++ User Input
+
+```cpp
+int x; 
+cout << "Type a number: "; // Type a number and press enter
+cin >> x; // Get user input from the keyboard
+cout << "Your number is: " << x; // Display the input value
+```
+
+### String
+
+#### Append
+
+A string in C++ is actually an object, which contain functions that can perform certain operations on strings. For example, you can also concatenate strings with the `append()` function:
+
+```cpp
+string firstName = "John ";
+string lastName = "Doe";
+string fullName = firstName.append(lastName);
+cout << fullName;
+```
+
+#### Length
+
+You might see some C++ programs that use the `size()` function to get the length of a string. This is just an alias of `length()`. It is completely up to you if you want to use `length()` or `size()`:
+
+```cpp
+string txt = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+cout << "The length of the txt string is: " << txt.length();
+cout << "The length of the txt string is: " << txt.size();
+```
+
+#### access
+
+You can access the characters in a string by referring to its index number inside square brackets `[]`.
+
+```cpp
+string myString = "Hello";
+cout << myString[0];
+// Outputs H
+```
+
+#### stringstream 
+
+- *Operator >>* Extracts formatted data.
+- *Operator <<* Inserts formatted data.
+- *Method str()* Gets the contents of underlying string device object.
+- *Method str(string)* Sets the contents of underlying string device object.
+
+```cpp
+stringstream ss(line);
+getline(ss, extract, ',')
+```
+
+```cpp
+stringstream ss("23,4,56");
+char ch;
+int a, b, c;
+ss >> a >> ch >> b >> ch >> c;  // a = 23, b = 4, c = 56
+// Here  is a storage area for the discarded commas.
+```
+
+```cpp
+string to_string() {
+    stringstream ss;
+    ss << age << "," << first_name << "," << last_name << "," << standard;
+```
+
+### Header
+
+````cpp
+// Include the cmath library
+#include <cmath>
+
+cout << sqrt(64);
+cout << round(2.6);
+cout << log(2);
+````
+
+### Booleans
+
+Outputs 1 (true)
+
+Outputs 0 (false)
+
+````cpp
+bool isCodingFun = true;
+bool isFishTasty = false;
+cout << isCodingFun;  // Outputs 1 (true)
+cout << isFishTasty;  // Outputs 0 (false)
+````
+
+### Short Hand If Else
+
+````cpp
+int time = 20;
+string result = (time < 18) ? "Good day." : "Good evening.";
+cout << result;
+````
+
+### Pointer
+
+assigns the memory address of *val* to pointer *p*. 
+
+```cpp
+int* p = & val
+```
+
+To access the content of the memory pointed to, prepend the variable name with a `*`.
+
+```cpp
+*p
+```
+
+**Reference Operator**
+
+When used in a variable declaration, the `&` symbol indicates that the variable is a reference to another variable.
+
+```cpp
+int x = 10;
+int &ref = x; // ref is a reference to x
+```
+
+`->` operator in C++ is used to access members of a structure or class through a **pointer**.
+
+```cpp
+pointer->member
+(*pointer).member
+// equivalent
+```
+
+```cpp
+struct Example {
+    int value;
+};
+
+int main() {
+    Example* examplePtr = new Example; // Dynamically allocate an Example object
+    examplePtr->value = 10; // Use -> to access the 'value' member of the object pointed by examplePtr
+    
+    std::cout << examplePtr->value; // Prints 10
+    
+    delete examplePtr; // Clean up the dynamically allocated memory
+    return 0;
+}
+```
+
+## Class
+
+It's a common practice to make all variables private, and set/get them using public methods. For example:
+
+```cpp
+class SampleClass {
+    private:
+        int val;
+    public:
+        void set(int a) {
+            val = a;
+        }
+        int get() {
+            return val;
+        }
+};
+```
+
+### Static
+
+```cpp
+struct Mat4 {
+    static const Mat4 I;
+    static const Mat4 Zero;
+    static Mat4 transpose(const Mat4& m);
+    static Mat4 inverse(const Mat4& m);
+    static Mat4 translate(Vec3 t);
+    static Mat4 rotate(float t, Vec3 axis);
+    static Mat4 euler(Vec3 angles);
+    static Mat4 rotate_to(Vec3 dir);
+    static Mat4 rotate_z_to(Vec3 dir);
+    static Mat4 scale(Vec3 s);
+    static Mat4 axes(Vec3 x, Vec3 y, Vec3 z);
+    ...
+}
+
+// calling a Mat4 static function
+// without using an instance to call it
+Mat4 m = Mat4::axes(t,t,t);
+```
+
+### Friends
+
+```cpp
+class A {
+	public:
+		int x;
+	private:
+		int y;
+// specify B is a friend class of A
+		friend class B
+	protected:
+		int z:
+};
+class B: public A {
+	void test1() {
+// works: B has access to public and protected
+	return x + z;
+	}
+	void test2() {
+// works: B is a friend class and
+// can access private A values
+		return y;
+	}
+}
+```
+
+### Nested Class
+
+```cpp
+class GraphicsWindow {
+public:
+    class Button {
+    public:
+        void click() {
+            // Handle the button click
+        }
+    };
+
+    Button closeButton;
+
+    void close() {
+        // Close the window
+    }
+};
+
+```
+
+### Overload operator
+
+- In C++, a `friend` function is a function that is not a member of a class but is granted access to the class's private and protected members. 
+
+```cpp
+class Vector {
+public:
+    int x, y;
+
+    Vector(int x, int y) : x(x), y(y) {}
+
+    // Overloading + operator as a member function
+    Vector operator+(const Vector& other) const {
+        return Vector(x + other.x, y + other.y);
+    }
+};
+```
+
+```cpp
+    //Overload operator < as specified
+    friend bool operator< (Box const& A, Box const& B){
+        if( (A.l < B.l) || ((A.b < B.b) && (A.l == B.l)) || ((A.h < B.h) && (A.l == B.l) && (A.b == B.b)) ){
+            return true;
+        }else{
+            return false;
+        }
+    }
+```
+
+### member variables
+
+The syntax `this->n = n;` assigns the value of the parameter `n` to the class's member variable `n`.
+
+```cpp
+class BadLengthException{
+    private:
+        int n;
+    public:
+        BadLengthException(int n){
+            this->n = n;
+        }
+};
+```
+
+### exception handling
+
+-  `std::bad_alloc`, which are typically thrown when dynamic memory allocation fails
+- `std::exception` class is a standard C++ exception type, and `error.what()` typically returns a C-string describing the error. This catch block will handle any exception derived from the 
+- `catch (...)`: This is a catch-all handler that will catch any exception not caught by the preceding handlers. non-standard exception 
+
+```cpp
+        try {
+            cout << Server::compute(A,B) << endl;
+        } 
+        catch (bad_alloc& error) {
+            cout << "Not enough memory" << endl;
+        }
+        catch (exception& error) {
+            cout << "Exception: " << error.what() << endl;
+        }
+        catch (...) {
+            cout << "Other Exception" << endl;
+        }
+```
+
+### Inheritance 
+
+```cpp
+class Animal {   // Base class
+public:
+    void eat() {
+        cout << "Eating..." << endl;
+    }
+};
+
+class Dog : public Animal {  // Derived class
+public:
+    void bark() {
+        cout << "Barking..." << endl;
+    }
+};
+
+int main() {
+    Dog d;
+    d.eat();   // Calling base class function
+    d.bark();  // Calling derived class function
+    return 0;
+}
+```
+
+**Public Inheritance (`public`)**:
+
+- When a class is derived with public inheritance, all public members of the base class become public members of the derived class, and all protected members of the base class remain protected in the derived class.
+
+**Protected Inheritance (`protected`)**:
+
+- With protected inheritance, all public and protected members of the base class become protected members of the derived class.
+
+**Private Inheritance (`private`)**:
+
+- In private inheritance, all public and protected members of the base class become private members of the derived class.
+
+`::` can be used to access a global variable when a local variable of the same name exists, or to specify which class a member function or variable belongs to if there's potential ambiguity.
+
+```cpp
+#include <iostream>
+
+int value = 5; // global variable
+
+class MyClass {
+public:
+    static int value; // static member variable of MyClass
+    static void printValue() {
+        std::cout << "Global value: " << ::value << std::endl; // Accesses the global variable
+        std::cout << "Class value: " << MyClass::value << std::endl; // Accesses the static member of MyClass
+    }
+};
+
+int MyClass::value = 10; // Definition of MyClass's static member variable
+
+int main() {
+    MyClass::printValue(); // Calls the printValue function of MyClass
+    return 0;
+}
+
+```
+
+### Virtual
+
+```cpp
+class Person{
+    private:
+    std::string name;
+    int age;
+    Person() {}
+    virtual void getdata() {}
+    virtual void putdata() {}
+    virtual ~Person() {}
+};
+```
+
+`virtual ~Person() {}`: The virtual destructor. It is crucial for a class hierarchy when you're dealing with polymorphism, as it ensures that the destructor of the derived class is called when an object is deleted through a pointer to the base class.
+
+### Virtual Inheritance
+
+Virtual inheritance solves this by ensuring that only one copy of the base class's members is inherited by the most derived class.
+
+```cpp
+class A {
+public:
+    int data;
+};
+
+class B : virtual public A { /* ... */ };
+class C : virtual public A { /* ... */ };
+
+class D : public B, public C { /* ... */ };
+```
+
+In this setup, `B` and `C` virtually inherit from `A`. As a result, there is only one copy of `A` in `D`, even though `D` inherits from both `B` and `C`.
+
+## Templates
+
+Templates help define a generic `datatype` that you can use to write versatile code without explicitly defining the interface for each type
+
+```cpp
+Template<typename T>
+class Cache {
+public:
+    Cache(int N) {
+        data = calloc(N, sizeof(T));
+        freq = calloc(N, sizeof(int));
+        size = N;
+    }
+    T get(int idx) {
+        freq[idx]++;
+        return data[idx];
+    }
+private:
+    T *data;
+    int *freq;
+    int size;
+}
+```
+
+Then we can create instances of int, float and double caches easily
+
+```cpp
+// creates int class
+Cache<int> a = Cache<int>(10);
+// creates float class
+Cache<float> b = Cache<float>(10);
+// creates double class
+Cache<double> c = Cache<double>(10);
+```
+
+### Data Structure Examples
+
+```cpp
+std::map<T1, T2> A; // list of key-value pairs
+std::unordered_map<T1, T2> B; // unordered list of key-value pairs
+std::set<T> C; // list without duplicates
+std::unordered_set<T> D; // unordered list without duplicates
+std::list<T> E; // dumb list
+std::vector<T> F; // fancy list
+std::deque<T> G; // list with multi-side insertion/deletion
+std::pair<T1, T2> H; // two-element list
+```
+
+## Iterators
+
+```cpp
+typedef list<Vertex>::iterator VertexIter;
+```
+
+`iterator`: The `iterator` is a nested type within the `list` class template. This means that the iterator type is defined as part of the `list` template class and is specific to the list instance it is iterating over.
+
+### type alias declaration
+
+`typedef`: The `typedef` keyword is then used to create an alias (`VertexIter`) for the `list<Vertex>::iterator` type. This makes the code more readable and easier to write, as you can use `VertexIter` instead of the longer `list<Vertex>::iterator` every time you need to declare an iterator for the list of vertices
+
+**`using` Keyword**: Introduced in C++11, the `using` keyword is used to define type aliases. It serves a similar purpose to the `typedef` keyword but with a more readable syntax, especially for template types.
+
+## Const
+
+We can define a variable as const such that we cannot update it, or we can define a function in a class as const such that we cannot modify any of the properties of that class.
+
+```cpp
+int valA = 15462;
+int valB = 15418;
+
+int *a = &valA; // normal int pointer
+a = &valB; // success! we can modify what a points too
+*a = 15213; // success! we can modify the value at the address a points to
+
+const int *b = &valA; // pointer to const int
+b = &valB; // success! we can modify what b points too
+*b = 15213; // fails: can't change value of const int
+
+int const *c = &valA; // const pointer to int
+c = &valB; // fails: can't change pointer
+*c = 15213; // success! we can modify the value at the address c points to
+
+const int const *d = &valA; // const pointer to a const int
+d = &valB; // fails: can't change pointer
+*d = 15213; // fails: can't change value of const int
+```
+
+Where we place the const keyword matters as to whether we can change the address of the pointer or the value at the
+location of the pointer.
+
+```cpp
+using HalfedgeCRef = list<Halfedge>::const_iterator;
+```
+
+## STL
+
+### Vector
+
+- *Declaration:*
+
+  ```cpp
+  vector<int>v; (creates an empty vector of integers)
+  ```
+
+- *Size:*
+
+  ```cpp
+  int size=v.size();
+  ```
+
+- *Pushing an integer into a vector:*
+
+  ```cpp
+  v.push_back(x);(where x is an integer.The size increases by 1 after this.)
+  ```
+
+- *Popping the last element from the vector:*
+
+  ```cpp
+  v.pop_back(); (After this the size decreases by 1)
+  ```
+
+- *Sorting a vector:*
+
+  ```cpp
+  sort(v.begin(),v.end()); (Will sort all the elements in the vector)
+  ```
+
+- *erase(int position):*
+
+  ```cpp
+  // Removes the element present at position.  
+  v.erase(v.begin()+4);
+  //(erases the fifth element of the vector v)
+  ```
+
+- *erase(int start,int end):*
+
+  ```cpp
+  //Removes the elements in the range from start to end inclusive of the start and exclusive of the end.
+  v.erase(v.begin()+2,v.begin()+5);
+  //(erases all the elements from the third element to the fifth element.)
+  ```
+
+**std::lower_bound**
+
+Returns an iterator pointing to the first element in the range `[first,last)` which does not compare less than val.
+
+```cpp
+ForwardIterator lower_bound (ForwardIterator first, ForwardIterator last, const T& val); 
+```
+
+```cpp
+#include <bits/stdc++.h>
+
+using namespace std;
+
+int main()
+{
+    int n, q, y;
+    cin >> n;
+    int a[n];
+    for(int &i : a)
+        cin >> i;
+    cin >> q;
+    while(q--)
+    {
+        cin >> y;
+        auto index = lower_bound(a, a + n, y);
+        if(*index == y)
+            cout << "Yes " << index - a  + 1 << endl;
+        else
+            cout << "No " << index - a + 1 << endl;
+    }
+    return 0;
+}
+```
+
+1. **`a`:** This is the starting address of the array. In C++, the name of an array can be used to represent the address of its first element. So, `a` is essentially a pointer to the first element of the array.
+2. **`a + n`:** This expression points to the memory location just past the end of the array. In C++, pointer arithmetic is used where `a + n` is the address that is `n` elements beyond `a`
+
+### Set
+
+*Declaration:*
+
+```cpp
+set<int>s; //Creates a set of integers.
+```
+
+*Size:*
+
+```cpp
+int length=s.size(); //Gives the size of the set.
+```
+
+*Insert:*
+
+```cpp
+s.insert(x); //Inserts an integer x into the set s.
+```
+
+*Erasing an element:*
+
+```cpp
+s.erase(val); //Erases an integer val from the set s.
+```
+
+*Finding an element:*
+
+```cpp
+set<int>::iterator itr=s.find(val); //Gives the iterator to the element val if it is found otherwise returns s.end() .
+Ex: set<int>::iterator itr=s.find(100); //If 100 is not present t
+```
+
+### Map
+
+- *Map Template:*
+
+  ```cpp
+  std::map <key_type, data_type>
+  ```
+
+- *Declaration:*
+
+  ```cpp
+  map<string,int>m; //Creates a map m where key_type is of type string and data_type is of type int.
+  ```
+
+- *Size:*
+
+  ```cpp
+  int length=m.size(); //Gives the size of the map.
+  ```
+
+- *Insert:*
+
+  ```cpp
+  m.insert(make_pair("hello",9)); //Here the pair is inserted into the map where the key is "hello" and the value associated with it is 9.
+  ```
+
+- *Erasing an element:*
+
+  ```cpp
+  m.erase(val); //Erases the pair from the map where the key_type is val.
+  ```
+
+- *Finding an element:*
+
+  ```cpp
+  map<string,int>::iterator itr=m.find(val); //Gives the iterator to the element val if it is found otherwise returns m.end() .
+  Ex: map<string,int>::iterator itr=m.find("Maps"); //If Maps is not present as the key value then itr==m.end().
+  ```
+
+- *Accessing the value stored in the key:*
+
+  ```cpp
+  To get the value stored of the key "MAPS" we can do m["MAPS"] or we can get the iterator using the find function and then by itr->second we can access the value.
+  ```
+
+**Pair**
+
+```cpp
+td::pair<int, string> myPair (10, "example");
+std::cout << myPair.first;  // Outputs 10
+std::cout << myPair.second; // Outputs "example"
+```
+
+### iomanip
+
+```cpp
+#include <iostream>
+#include <iomanip>        
+		cout << hex << left << showbase << nouppercase;
+        cout << (long long)A << endl;
+
+        cout << dec << right << setw(15) << setfill('_') << showpos << fixed << setprecision(2);
+        cout << B << endl;
+
+        cout << scientific << uppercase << noshowpos << setprecision(9);
+        cout << C << endl;
+```
+
+- **Hexadecimal Representation:** Outputs `A` in hexadecimal format (`hex`).
+- **Left-justified:** Aligns the number to the left (`left`).
+- **Showbase:** Adds the hexadecimal base prefix (`0x` or `0X`), but with `nouppercase`, it ensures the prefix is in lowercase (`0x`).
+
+- **Decimal Representation:** Outputs `B` in decimal format (`dec`).
+- **Right-justified with Width and Fill:** Sets the width to 15 characters (`setw(15)`) and fills any extra space with underscores (`setfill('_')`).
+- **Show Positive Sign:** Always shows the sign for positive numbers (`showpos`).
+- **Fixed-Point Notation:** Displays `B` in fixed-point notation (`fixed`) with 2 digits after the decimal point (`setprecision(2)`).
+- **Scientific Notation:** Outputs `C` in scientific notation (`scientific`).
+- **Uppercase:** Ensures that the scientific notation exponent is in uppercase (e.g., `1.234E+02`).
+- **No Show Positive Sign:** Does not show the plus sign for positive numbers (`noshowpos`).
+- **Precision:** Sets precision to 9 digits after the decimal point (`setprecision(9)`).
+
+### Array
+
+**Uniform Initialization (C++11 and Later)**
+
+```cpp
+cppCopy code
+std::array<int, 3> arr = {1, 2, 3};
+```
+
+This syntax uses curly braces `{}` and is the most common way to initialize `std::array` since it's clear and concise.
+### Deque
+
+**Double ended queue** or Deque(part of C++ STL) are sequence containers with dynamic sizes that can be expanded or contracted on both ends (either its front or its back). 
+
+- *Deque Template:*
+
+  ```
+  std::deque<value_type>
+  ```
+
+- *Declaration:*
+
+  ```
+  deque<int> mydeque; //Creates a double ended queue of deque of int type
+  ```
+
+- *Size*
+
+  ```
+  int length = mydeque.size(); //Gives the size of the deque
+  ```
+
+- *Push*
+
+  ```
+  mydeque.push_back(1); //Pushes element at the end
+  mydeque.push_front(2); //Pushes element at the beginning
+  ```
+
+- *Pop*
+
+  ```
+  mydeque.pop_back(); //Pops element from the end
+  mydeque.pop_front(); //Pops element from the beginning
+  ```
+
+- *Empty*
+
+  ```
+  mydeque.empty() //Returns a boolean value which tells whether the deque is empty or not
+  ```

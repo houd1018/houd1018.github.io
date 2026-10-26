@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gotcha | Dazhou Hou</title>
+  <meta name="description" content="Siamese network applied on Pok´emon dataset for Few-shot classification" />
+  <script src="../config.js"></script>
+  <link rel="icon" href="../assets/img/favicons/favicon.ico" />
+  <link rel="stylesheet" href="../css/base.css" />
+  <link rel="stylesheet" href="../css/content.css" />
+</head>
+<body class="page-content" data-project="gotcha-siamese-network-applied-on-pokemon-dataset">
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <a class="site-brand" href="../index.html">Dazhou Hou</a>
+    <nav class="site-nav" aria-label="Primary">
+      <a href="../index.html">Home</a>
+      <a href="../index.html#about">About Me</a>
+      <a href="index.html" aria-current="page">Projects</a>
+      <a href="../blog/index.html">Blog</a>
+      <a href="../index.html#contact">Contact</a>
+    </nav>
+  </header>
+
+  <section class="page-hero content-header">
+    <p class="content-category">Creative Coding</p>
+    <h1>Gotcha</h1>
+      <p class="content-subtitle">Siamese network applied on Pok´emon dataset for Few-shot classification</p>
+  </section>
+
+  <main id="main" class="content prose">
+    <p><em>Project for 2022 Spring WKU Student Research Day</em></p>
+    <p><strong>Description</strong>: This project uses a Siamese network to implement Few-shot learning. A dataset of five different Pok´emon images is used to train the model. When inputting a new category of Pok´emon pictures, the Pok´emon types can be identified with the help of a support set. The model will specify which image in the dataset is closest to the input image.</p>
+    <p><strong>Few-shot learning</strong>: This is a machine learning method where the training dataset contains limited information. In this case, we will use a supported dataset that has only a few data to help classify.</p>
+    <p><strong>Siamese network</strong>: This artificial neural network uses the same weights while working on two different input vectors to compute comparable output vectors.</p>
+    <div class="gif-grid gif-grid--3">
+    <figure><img data-media-src="2022/08/1.jpg" alt="1" loading="lazy"></figure>
+    <figure><img data-media-src="2022/08/2.png" alt="2" loading="lazy"></figure>
+    <figure><img data-media-src="2022/08/图片1.png" alt="图片1" loading="lazy"></figure>
+    </div>
+    <p>Framework: PyTorch<br>Neural Network Architecture: VGG-16<br>Loss Function: Binary Cross Entropy<br>Optimizer: Adam with initial Lr =1e-4<br>Input shape: [105,105,3]<br>Train ratio: 0.9<br>Batch size: 32<br>Dataset size: 1500 images<br>Epoch: 100</p>
+    <p>Reference:</p>
+    <p>Fei-Fei, Fergus, &amp; Perona. One-shot learning of object categories. IEEE Transactions on PAMI, 2006.<br>Bromley et al. Signature verification using a Siamese time delay neural network. In NIPS. 1994.<br>Koch, Zemel, &amp; Salakhutdinov. Siamese neural networks for one-shot image recognition. In ICML, 2015.</p>
+    <p class="back-link"><a href="index.html">&larr; All projects</a></p>
+  </main>
+
+  <footer class="site-footer">
+    &copy; Dazhou Hou &middot;
+    <a href="https://github.com/houd1018" target="_blank" rel="noopener noreferrer">GitHub</a>
+  </footer>
+
+  <script src="../data/projects.js"></script>
+  <script src="../js/lightbox.js"></script>
+  <script src="../js/content.js"></script>
+</body>
+</html>

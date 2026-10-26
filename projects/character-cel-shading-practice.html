@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Character ToonShader | Dazhou Hou</title>
+  <meta name="description" content="Unity Buit-in / URP / HLSL / Houdini / Tool" />
+  <script src="../config.js"></script>
+  <link rel="icon" href="../assets/img/favicons/favicon.ico" />
+  <link rel="stylesheet" href="../css/base.css" />
+  <link rel="stylesheet" href="../css/content.css" />
+</head>
+<body class="page-content" data-project="character-cel-shading-practice">
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <a class="site-brand" href="../index.html">Dazhou Hou</a>
+    <nav class="site-nav" aria-label="Primary">
+      <a href="../index.html">Home</a>
+      <a href="../index.html#about">About Me</a>
+      <a href="index.html" aria-current="page">Projects</a>
+      <a href="../blog/index.html">Blog</a>
+      <a href="../index.html#contact">Contact</a>
+    </nav>
+  </header>
+
+  <section class="page-hero content-header">
+    <p class="content-category">Tech Art</p>
+    <h1>Character ToonShader</h1>
+      <p class="content-subtitle">Unity Buit-in / URP / HLSL / Houdini / Tool</p>
+  </section>
+
+  <main id="main" class="content prose">
+    <figure class="media-figure"><img data-media-src="2024/04/Toon.gif" alt="Toon" loading="lazy"></figure>
+    <p>This project is the exercise for the Celluloid Style Toon shader basic principle under the Unity URP and Built-in pipeline.</p>
+    <p>involved technology: C#, URP, HLSL</p>
+    <p><strong>Please hit <a href="../blog/post.html?slug=toon-shader">this</a> to find implementation details</strong></p>
+    <ul><li>Bulit the outline feature which uses the normal expansion algorithm,and uses a Normal Smoothing algorithm to smooth the outline</li><li>Use stencil buffer and render object to control rendering order, and implement the external outline.</li><li>Implement multi-level shadows based on the Lambert lighting model, supporting ramp map and shadow map, built ramp map texture generation tool in Unity</li><li>Implemented  Cel-shading, using smoothstep to control the softness and hardness of the shadow. Implemented RimLight by Fresnel, Specular by Blinn-Phong, and bloom.</li></ul>
+    <figure>
+    <figure class="media-figure"><img data-media-src="2024/04/20240401172952.jpg" alt="20240401172952" loading="lazy"></figure>
+    <figcaption>Render outline after Opaque objects</figcaption></figure>
+    <figure>
+    <figure class="media-figure"><img data-media-src="2024/04/20240401204514.jpg" alt="20240401204514" loading="lazy"></figure>
+    <figcaption>Lambert model with shadow level 2</figcaption></figure>
+    <p class="back-link"><a href="index.html">&larr; All projects</a></p>
+  </main>
+
+  <footer class="site-footer">
+    &copy; Dazhou Hou &middot;
+    <a href="https://github.com/houd1018" target="_blank" rel="noopener noreferrer">GitHub</a>
+  </footer>
+
+  <script src="../data/projects.js"></script>
+  <script src="../js/lightbox.js"></script>
+  <script src="../js/content.js"></script>
+</body>
+</html>

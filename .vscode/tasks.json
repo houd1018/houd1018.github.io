@@ -2,25 +2,22 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Run Jekyll Server",
+      "label": "Serve site locally",
       "type": "shell",
-      "command": "./tools/run.sh",
+      "command": "python -m http.server 8000",
+      "isBackground": true,
       "group": {
         "kind": "build",
         "isDefault": true
       },
       "problemMatcher": [],
-      "detail": "Runs the Jekyll server with live reload."
+      "detail": "Static preview at http://localhost:8000 (media loads from ./cleaned_media/)."
     },
     {
-      "label": "Build Jekyll Site",
+      "label": "Clean media (dry run)",
       "type": "shell",
-      "command": "./tools/test.sh",
-      "group": {
-        "kind": "build"
-      },
-      "problemMatcher": [],
-      "detail": "Build the Jekyll site for production."
+      "command": "python scripts/clean_uploads.py --extra assets/pic:blog/pic --dry-run",
+      "problemMatcher": []
     }
   ]
 }

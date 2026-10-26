@@ -61,7 +61,7 @@ cleaned_media/          cleaned media (gitignored, uploaded to R2)
 | `--cmyk-y` | `#fff200` | Yellow |
 | `--cmyk-k` | `#111111` | Black |
 
-- Hero: dark gray background, **diagonal white bottom edge** (`clip-path`), centered bio + social icons; background of cyan/magenta/yellow/black **diagonal hand-drawn crayon strokes** with translucent overprint where they cross (`mix-blend-mode: multiply` or subtractive blending in a shader), keeping a grainy hand-drawn feel.
+- Hero: dark gray background, **curved white bottom edge** (inline SVG wave), centered bio + social icons; background of cyan/magenta/yellow/black **diagonal hand-drawn crayon strokes** with translucent overprint where they cross (Canvas 2D `multiply` compositing in `js/hero-sketch.js`), keeping a grainy hand-drawn feel. Subpages use a shorter `.page-hero` band with a diagonal edge.
 - Navigation (top right): `Home` | `About Me` | `Projects` | `Blog` | `Contact`, thin white type, same order on every page.
 - Project grid: filters `ALL | COMPUTER GRAPHICS | TECH ART | GAMES | CREATIVE CODING`; 3 columns desktop / 2 tablet / 1 mobile; light lavender-gray cards with coral titles; static cover that switches to a GIF/video preview on hover (lazy-loaded).
 - Category ids: `computer-graphics`, `tech-art`, `games`, `creative-coding`.

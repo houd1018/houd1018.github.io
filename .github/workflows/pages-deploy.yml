@@ -1,4 +1,5 @@
-name: "Build and Deploy"
+name: Deploy static site
+
 on:
   push:
     branches:
@@ -6,10 +7,9 @@ on:
       - master
     paths-ignore:
       - .gitignore
-      - README.md
       - LICENSE
-
-  # Allows you to run this workflow manually from the Actions tab
+      - "_legacy_backup/**"
+      - "portfolio_Legacy/**"
   workflow_dispatch:
 
 permissions:
@@ -17,7 +17,6 @@ permissions:
   pages: write
   id-token: write
 
-# Allow one concurrent deployment
 concurrency:
   group: "pages"
   cancel-in-progress: true
@@ -25,41 +24,35 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          # submodules: true
-          # If using the 'assets' git submodule from Chirpy Starter, uncomment above
-          # (See: https://github.com/cotes2020/chirpy-starter/tree/main/assets)
 
       - name: Setup Pages
-        id: pages
-        uses: actions/configure-pages@v4
+        uses: actions/configure-pages@v5
 
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: 3.3
-          bundler-cache: true
-
-      - name: Build site
-        run: bundle exec jekyll b -d "_site${{ steps.pages.outputs.base_path }}"
-        env:
-          JEKYLL_ENV: "production"
-
-      - name: Test site
+      # Publish only the site allowlist; archives, scripts and media sources stay out of the artifact.
+      - name: Assemble site
         run: |
-          bundle exec htmlproofer _site \
-            \-\-disable-external \
-            \-\-ignore-urls "/^http:\/\/127.0.0.1/,/^http:\/\/0.0.0.0/,/^http:\/\/localhost/"
+          mkdir -p _site
+          for p in index.html 404.html config.js .nojekyll css js data projects blog assets/img; do
+            if [ -e "$p" ]; then cp -r --parents "$p" _site/; fi
+          done
+          ls -la _site
 
-      - name: Upload site artifact
+      - name: Guard against media in the artifact
+        run: |
+          bad=$(find _site -type f \( -iname '*.mp4' -o -iname '*.mov' -o -iname '*.webm' -o -iname '*.m4v' -o -size +2M \))
+          if [ -n "$bad" ]; then
+            echo "::error::Media/large files must be served from MEDIA_BASE_URL, not GitHub Pages:"
+            echo "$bad"
+            exit 1
+          fi
+
+      - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: "_site${{ steps.pages.outputs.base_path }}"
+          path: _site
 
   deploy:
     environment:

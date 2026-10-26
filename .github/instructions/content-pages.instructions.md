@@ -14,19 +14,22 @@ Everything here builds on the architecture rules in `.github/copilot-instruction
 ```js
 window.PROJECTS = [
   {
-    slug: 'interactive-desert',              // lowercase kebab-case, unique, maps to projects/<slug>.html
-    title: 'Interactive Desert',
+    slug: 'interactive-sand-desert-scene',   // lowercase kebab-case, unique, maps to projects/<slug>.html
+    title: 'Interactive Sand – Stylized Desert Scene',
     category: 'tech-art',                    // computer-graphics | tech-art | games | creative-coding
-    tags: ['Unity', 'URP', 'HLSL', 'Tessellation'], // tech stack
-    date: '2024-04-04',                      // ISO date, lists sort newest first
-    summary: 'One-line description (≤ 120 chars)',
-    cover: '2024/04/desert.jpg',             // media library path (static cover)
-    preview: '2024/04/desert.gif',           // optional: hover preview GIF or .mp4
-    video: 'https://www.youtube.com/watch?v=XXXX', // optional: main video (YouTube/Bilibili/library mp4)
-    featured: false,                         // optional: show on home page
+    subtitle: 'URP / HLSL / 3D Environment', // tech stack line shown on the card
+    date: '2024-04-11',                      // ISO date
+    cover: '2024/04/Sand.gif',               // media library path (card cover)
+    preview: '2024/04/Sand.mp4',             // optional: hover preview GIF or .mp4
+    video: 'https://www.youtube.com/watch?v=XXXX', // optional: main video
+    url: 'https://example.com/',             // optional: external project, card links here (no detail page)
+    listed: false,                           // optional: has a detail page but is hidden from the grid
   },
 ];
 ```
+
+- **Array order is the display order** of the grid (curated). New projects go at the top unless the user says otherwise.
+- `listed: false` entries are sub-pages (e.g. individual game-jam / BVW projects) linked from other project pages.
 
 ### `data/blog.js`
 
@@ -44,12 +47,12 @@ window.BLOG_POSTS = [
 ];
 ```
 
-- Keep arrays sorted by `date`, newest first; do not reformat or reorder fields of other entries.
+- `data/blog.js` stays sorted by `date`, newest first. Do not reformat or reorder fields of other entries.
 - Never store full media URLs in these files — only media library paths.
 
 ## 2. Project detail page `projects/<slug>.html`
 
-Page skeleton (keep it identical across pages for easy bulk maintenance):
+Page skeleton (keep it identical across pages for easy bulk maintenance; copy an existing page such as `projects/sarapist.html` for the full header/footer markup):
 
 ```html
 <!DOCTYPE html>
@@ -58,20 +61,23 @@ Page skeleton (keep it identical across pages for easy bulk maintenance):
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{Title} | Dazhou Hou</title>
-  <meta name="description" content="{summary}" />
+  <meta name="description" content="{subtitle or summary}" />
   <script src="../config.js"></script>
+  <link rel="icon" href="../assets/img/favicons/favicon.ico" />
   <link rel="stylesheet" href="../css/base.css" />
   <link rel="stylesheet" href="../css/content.css" />
 </head>
 <body class="page-content" data-project="{slug}">
-  <header class="site-nav"><!-- Home | About Me | Projects | Blog | Contact --></header>
-  <main class="content">
-    <header class="content-header">
-      <p class="content-category">{CATEGORY LABEL}</p>
-      <h1>{Title}</h1>
-      <ul class="tech-stack"><li>Unity</li><li>HLSL</li></ul>
-    </header>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header"><!-- brand + nav: Home | About Me | Projects | Blog | Contact --></header>
+  <section class="page-hero content-header">
+    <p class="content-category">{Category Label}</p>
+    <h1>{Title}</h1>
+    <p class="content-subtitle">{subtitle}</p>
+  </section>
+  <main id="main" class="content prose">
     <!-- content blocks, see below -->
+    <p class="back-link"><a href="index.html">&larr; All projects</a></p>
   </main>
   <footer class="site-footer"></footer>
   <script src="../data/projects.js"></script>
@@ -164,5 +170,5 @@ Page skeleton (keep it identical across pages for easy bulk maintenance):
 
 - [ ] No occurrences of `wp-content/uploads`, `cleaned_media/`, `/assets/pic/`, or `http(s)://…r2.dev`.
 - [ ] Media paths point to master files (no `-WxH`, `-scaled`, `-e<timestamp>` suffixes).
-- [ ] `data/*.js`: unique slugs, newest-first order, valid syntax.
+- [ ] `data/*.js`: unique slugs, blog newest-first, valid syntax.
 - [ ] Pages load scripts in `config.js → data → js` order.

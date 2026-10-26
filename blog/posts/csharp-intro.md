@@ -1,0 +1,207 @@
+## virtual method
+In C#, a virtual method is a method that can be overridden in a derived class. When a method is declared as virtual in a base class, it allows a derived class to provide its own implementation of the method.
+
+```csharp
+public class Animal
+{
+    public virtual void MakeSound()
+    {
+        Console.WriteLine("The animal makes a sound");
+    }
+}
+```
+```csharp
+public class Cat : Animal
+{
+    public override void MakeSound()
+    {
+        Console.WriteLine("The cat meows");
+    }
+}
+```
+Difference between `Abstract`: virtual method is optional to be *override* in subclass, but Abstract method must be overriden in subclass.
+
+## [Operator overloading - predefined unary, arithmetic, equality and comparison operators](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/operators/operator-overloading)
+让运算符看起来更简洁
+```csharp
+    public static Fraction operator +(Fraction a) => a;
+    public static Fraction operator -(Fraction a) => new Fraction(-a.num, a.den);
+
+    public static Fraction operator +(Fraction a, Fraction b)
+        => new Fraction(a.num * b.den + b.num * a.den, a.den * b.den);
+
+    public static Fraction operator -(Fraction a, Fraction b)
+        => a + (-b);
+
+    public static Fraction operator *(Fraction a, Fraction b)
+        => new Fraction(a.num * b.num, a.den * b.den);
+
+Apprentice  a = new Apprentice();
+Apprentice  p1 = new Provision(10), p2 = new Provision(50);
+Apprentice  newa = p1 + p2 + a;
+```
+## indexer
+https://learn.microsoft.com/zh-cn/dotnet/csharp/indexers
+
+通过索引来访问对象
+
+## generic and refence an array
+`ref` & `out`: 调用时必须填入可赋值的变量，且要加上对应的rer或out词缀. 修改方法内的rer和out变量，将会直接改变调用者外部填入的变量. 
+
+区别在于rer可以不修改，作为普通参数使用，out则必须修改，且在修改后才能在方法内使用
+可以通过定义多个rer或out参数，来实现一个方法带出多个返回值 
+```csharp
+// list, Dictionary, Stack, Queue 封装好的 支持泛型 的存储数据结构
+// 非泛型 -> hashtable
+void AddElenment<Type> (ref Type[] array Type newElement)
+    {
+        Type[] new Array = new Type[array.Length + 1];
+    }
+
+// var -> unsure the value type in the generic data structure
+    foreach (var item in playerInfo)
+```
+
+## [delegate](https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/delegates/)
+“Delegate是一个可以存放函数的容器”
+
+如果把所有方法放到各个不同的类里，另一个类要应用就要新建一个instance来引用，很复杂。所以新建一个Event作为委托类，所有的类需要的方法都从这个Event类里来引用。
+
+![131059](media:blog/pic/131059.png)
+```csharp
+class commend
+{
+    // 定义一个delegate
+public delegate void Event(string s);
+
+// 创建delegate
+// weather 和 notice可以 commend.weather来引用
+Event weather, notice;
+
+void Start(){
+    weather("sunny");
+    // weather += GoToLib;
+    weather += (s) => {print("今天" + s);};
+}
+// commend.weather 一次运行所有被+=的functions
+void GoTolib(string s) {};
+    print("今天" + s);
+}
+```
+### Action
+类似于 [`unity event`](https://blog.csdn.net/qq_28849871/article/details/78366236)
+![](media:blog/pic/133919.png)
+
+```csharp
+using UnityEngine.Events;
+[System.Serializable]
+public class EventVector3 : UnityEvent<Vector3> { }
+public class MouseManager : MonoBehaviour
+{
+        public EventVector3 OnMouseClicked;
+}
+```
+
+```csharp
+    public static Action<int> test;
+
+    private void Start()
+    {
+        // bind the method
+        Event.test += num =>
+        {
+            print(num + "\n" + (num + 1) + "\n" + "hello");
+        };
+
+        // invoke the method
+        for (int i = 0; i < 5; i++)
+        {
+            Event.test?.Invoke(i);
+        }
+    }
+```
+
+## [enum](https://learn.microsoft.com/zh-cn/dotnet/csharp/language-reference/builtin-types/enum)
+
+默认情况下，枚举成员的关联常数值为类型 int；它们从零开始，并按定义文本顺序递增 1。 可以显式指定任何其他整数数值类型作为枚举类型的基础类型。
+
+## Property - get / set
+```csharp
+    public CharacterStats_SO characterData;
+    #region Read from Data_SO
+    public int MaxHealth
+    {
+        get
+        {
+            if (characterData != null)
+            {
+                return characterData.maxHealth;
+            }
+            else
+            {
+                return 0;
+            }
+        }
+        set
+        {
+            characterData.maxHealth = value;
+        }
+    }
+```
+
+## Extention
+eg. make a `extension` to Transform
+```csharp
+public static class ExtensionMethod
+{
+    private const float dotThreshold = 0.5f;
+    public static bool IsFacingTarget(this Transform transform, Transform target)
+    {
+        var vectorToTarget = target.position - transform.position;
+        vectorToTarget.Normalize();
+
+        float dot = Vector3.Dot(transform.up, vectorToTarget);
+        return dot >= dotThreshold;
+    }
+}
+```
+
+## ToString
+
+```csharp
+    private void Update()
+    {
+        levelText.text = "Level " + GameManager.Instance.playerStats.characterData.currentLevel.ToString("00");
+        UpdateHealth();
+        UpdateExp();
+    }
+```
+## Property
+
+```csharp
+    public InventoryData_SO Bag { get; set; }
+
+    public int Index {get; set;} = -1;
+```
+
+## [LINQ 查询操作](https://learn.microsoft.com/zh-cn/dotnet/csharp/programming-guide/concepts/linq/basic-linq-query-operations)
+```csharp
+    public List<QuestTask> tasks = new List<QuestTask>();
+
+    public bool HaveQuest(QuestData_SO data)
+    {
+        if (data != null)
+        {
+            return tasks.Any(q => q.questData.questName == data.questName);
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    public QuestTask GetTask(QuestData_SO data)
+    {
+        return tasks.Find(q => q.questData.questName == data.questName);
+    }
+```

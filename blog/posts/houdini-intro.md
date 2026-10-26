@@ -1,0 +1,256 @@
+## Roll Tube - Attributes / Geometry / UV
+
+### Base
+
+- Scatter
+- copytopoints
+- Group -> group the bottom point
+
+![](media:blog/pic/tube.gif)
+
+![](media:blog/pic/20240501194619.png)
+
+**PolyLine**
+
+Bezier -> PolyLine
+
+- Resample
+
+![](media:blog/pic/20240501180054.png)
+
+**Mesh**
+
+![](media:blog/pic/tube_mesh.gif)
+
+- add noise in `pscale` and `p`
+
+  ![](media:blog/pic/20240504143555.png)
+
+![](media:blog/pic/tube_anim.gif)
+
+### Attributes
+
+https://entagma.com/courses/ahtya-2-adding-houdini-to-your-arsenal-2-0/ahtya-2-0-pt-08-understanding-attributes-in-houdini/
+
+Unlike groups, attribs allow us to **specify a data type**. In this case we're using a float attrib (a number with a decimal point) to create a smooth
+
+**P** - Positions (Vector | Points)
+**N** - Normals / Directions (Vector | Points or Vertices)
+**uv** - UV Coordinates (Vector | Points or Vertices)
+**Cd** - Color (Vector | Points)
+**pscale** - Scaling / Size of stuff (Float | Points)
+
+![](media:blog/pic/20240504142736.png)
+
+- maskbyfeature
+
+- timeshift -> become static 解决让某一部分不按frame变化 (remove attribute animation)
+
+  #### Output
+  
+  remove extra output, clear attribute -> which can be clear in the shader
+  
+  ![](media:blog/pic/20240504152544.png)
+  
+  ![](media:blog/pic/20240504152809.png)
+
+![](media:blog/pic/20240505115414.png)
+
+### Geometry
+
+![](media:blog/pic/20240504142951.png)
+
+- edge: not for building the model, but for selection
+
+- **vertices has direction**
+
+When working with groups and attribs, using **points or prims is usually a lot simpler** and more practical, than using vertices.
+
+However in some cases, for instance in normals or uvs, **vertices do offer us more options**, we might need to get the desired result.
+
+![](media:blog/pic/20240504143243.png)
+
+### UV
+
+![](media:blog/pic/20240504151136.png)
+
+![](media:blog/pic/20240504151235.png)
+
+## For Loop
+
+https://entagma.com/courses/ahtya-2-adding-houdini-to-your-arsenal-2-0/ahtya-2-0-pt-13-understanding-for-loops-in-houdini/
+
+- Foreach loop
+  - piece (name)
+  - point
+  - primitive
+  - feedback(add randomness to each element)
+- clip
+- blast
+- matchsize
+
+![](media:blog/pic/20240505034025.png)
+
+- switch
+
+  - selection input(bool) eg. `rand(detail(0, "iteration", 0))>.75`
+
+  ![](media:blog/pic/20240505123352.png)
+
+## Procedural city - Node / VOPs / Wrangle
+
+### import 2D OSM data to bego format
+
+- get data from OpenStreetMap 
+
+  ![](media:blog/pic/20240505175547.png)
+
+- `osm_import` & `osm_filter`
+
+![](media:blog/pic/20240505173851.png)
+
+### Setting random height
+
+- give random height according to a base
+
+- measure (area base)
+
+![](media:blog/pic/20240505182835.png)
+
+- more noise
+  - attribrenoisse
+  - attribrandom
+- Remap -> make some different on certain building
+
+![](media:blog/pic/20240505183953.png)
+
+### VOPs
+
+- Bind -> import attributes
+
+![](media:blog/pic/20240505202552.png)
+
+- Remap
+
+![](media:blog/pic/20240505195755.png)
+
+- noise
+
+![](media:blog/pic/20240505202620.png)
+
+- index of the current primitives -> random
+
+![](media:blog/pic/20240505202742.png)
+
+### Wrangle / Vex
+
+```cpp
+//Get Attrib
+float area = f@area;
+
+//Remap
+float zscale = fit(area, 1.0, 25000.0, 0.0, 1.0);
+zscale = chramp("Remap", zscale);
+zscale = fit(zscale, 0.0, 1.0, 10.0, 30.0);
+
+//Noise
+float noise = noise(v@P/1000);
+noise = chramp("Noise", noise);
+noise = noise * 100;
+zscale = zscale + noise;
+
+//Random
+float random = rand(i@primnum);
+random = fit(random, 0.0, 1.0, 0.8, 1.2);
+zscale = zscale * random;
+
+//Update Attrib
+f@zscale = zscale;
+```
+
+![](media:blog/pic/20240505205730.png)
+
+### Data Visualization
+
+![](media:blog/pic/20240505221753.png)
+
+- import CSV -> `tableimport` -> Get Arrtibutes
+
+![](media:blog/pic/20240505211549.png)
+
+- degree -> cartesian coordinate
+
+```cpp
+//Load in lat lon attribs and convert them to radians.
+float lat = radians(f@lat);
+float lon = radians(f@lon);
+
+//Calculate xyz coordinates based on lat lon
+float x = cos(lat) * cos(lon);
+float y = cos(lat) * sin(lon);
+float z = sin(lat);
+
+//Write coordinates back to position and normal
+v@P = set(x,y,z);
+v@N = set(x,y,z);
+```
+
+- transform -> rotate x axis
+
+![](media:blog/pic/20240505215235.png)
+
+- color -> country
+
+  ![](media:blog/pic/20240505215428.png)
+
+- pop - pscale
+
+- add pillar to the sphere
+
+  - line
+  - copytopoints
+  - sweep
+
+  ![](media:blog/pic/20240505221014.png)
+
+## Rock Generation
+
+**low poly rock**
+
+- `Scatter`: make it to points-> `voronoifaracture`: make random division
+- matchsize: make each piece in the center
+
+![](media:blog/pic/rock.gif)
+
+**high poly rock**
+
+![](media:blog/pic/rockhigh.gif)
+
+- uv: reserve the original uv info
+- remesh: make more division
+- mountain: deform
+- mesh_sharpen: modify the iteration -> make it rough 
+- edge_damage: `method: boolean` ->  sharpen some edges
+- vop: random color `cd` -> random greyscale
+
+![](media:blog/pic/20240622183140.png)
+
+## Rails
+
+![](media:blog/pic/rail.gif)
+
+**Facet**: Clean up points. Make sure every line only has two points as endpoints
+
+**resample**: Treat polygons as Subdivision Curves -> set up points evenly
+
+**Convertline**: take lines into primitives
+
+Instance model in different size based on line's length
+
+![](media:blog/pic/164442.png)
+
+`primitivesplit1` + `primitiveProperty` -> sacle = 0: get the middle point of the primitives
+![](media:blog/pic/170752.png)
+
+**Divide different property -> uniform scale**: maintian the scale in the wrangle
+![](media:blog/pic/104207.png)

@@ -1,0 +1,7 @@
+For **VS Code**, please follow the instruction on this website and make sure all required extensions are installed: [Unity Development with VS Code](https://code.visualstudio.com/docs/other/unity)
+
+If the issue persists, please check the console of VS Code (not Unity!). If the **.NET Framework 4.7.1 (Developer Pack)** is mentioned there, download and install it from the official Microsoft website. Make sure that you install this exact version. Other versions do not work.
+https://dotnet.microsoft.com/download/dotnet-framework/net471
+
+If you use Linux or a Mac, download the latest stable MONO Framework.
+https://www.mono-project.com/download/stable/

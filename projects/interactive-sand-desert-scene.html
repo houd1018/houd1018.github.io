@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interactive Sand – Stylized Desert Scene | Dazhou Hou</title>
+  <meta name="description" content="URP / HLSL / 3D Environment" />
+  <script src="../config.js"></script>
+  <link rel="icon" href="../assets/img/favicons/favicon.ico" />
+  <link rel="stylesheet" href="../css/base.css" />
+  <link rel="stylesheet" href="../css/content.css" />
+</head>
+<body class="page-content" data-project="interactive-sand-desert-scene">
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <a class="site-brand" href="../index.html">Dazhou Hou</a>
+    <nav class="site-nav" aria-label="Primary">
+      <a href="../index.html">Home</a>
+      <a href="../index.html#about">About Me</a>
+      <a href="index.html" aria-current="page">Projects</a>
+      <a href="../blog/index.html">Blog</a>
+      <a href="../index.html#contact">Contact</a>
+    </nav>
+  </header>
+
+  <section class="page-hero content-header">
+    <p class="content-category">Tech Art</p>
+    <h1>Interactive Sand – Stylized Desert Scene</h1>
+      <p class="content-subtitle">URP / HLSL / 3D Environment</p>
+  </section>
+
+  <main id="main" class="content prose">
+    <p>Shader practice in URP using HLSL</p>
+    <p>Some assets are free assets online</p>
+    <figure class="media-figure"><img data-media-src="2024/04/Sand-1.gif" alt="Sand 1" loading="lazy"></figure>
+    <p><a href="../blog/post.html?slug=interactive-desert">🔗hit this link to find implementation details</a></p>
+    <ul><li>Performed Tessellation algorithm based on camera distance by setting the Hull shader and Domain shader</li><li>set noise map as displacement in the direction of normal to make vertex offset.</li><li>Used RenderTexture, particle system, and orthographic camera to track character movement, and move vertices with the guide of normal.</li><li>Support multiple lights, casting and receiving shadows. Realized the sparkle effect on the sand by sampling the noise map.</li></ul>
+    <div class="media-video"><video controls playsinline preload="metadata" data-media-src="2024/04/【测试展示】技术美术_原神（渲染向）-侯大洲.mp4"></video></div>
+    <p class="back-link"><a href="index.html">&larr; All projects</a></p>
+  </main>
+
+  <footer class="site-footer">
+    &copy; Dazhou Hou &middot;
+    <a href="https://github.com/houd1018" target="_blank" rel="noopener noreferrer">GitHub</a>
+  </footer>
+
+  <script src="../data/projects.js"></script>
+  <script src="../js/lightbox.js"></script>
+  <script src="../js/content.js"></script>
+</body>
+</html>
