@@ -158,7 +158,7 @@ def transform_body(body: str) -> Tuple[str, List[str]]:
         out.append(line)
 
     text = "\n".join(out).strip("\n")
-    text = re.sub(r"\n{3,}", "\n\n", text)
+    text = re.sub(r"\n{3,}", "\n\n", text).replace("Buit-in", "Built-in")
     return text + "\n", warnings
 
 

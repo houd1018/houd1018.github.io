@@ -11,7 +11,7 @@
   // ============================================================
   // For deployment, change only this line: Cloudflare R2 public / custom CDN domain (trailing /).
   // ============================================================
-  var MEDIA_BASE_URL_REMOTE = 'https://media.example.com/';
+  var MEDIA_BASE_URL_REMOTE = 'https://pub-af66391f274d47529898def605b4df9a.r2.dev/';
 
   // 'auto'  : file:// and localhost → local ./cleaned_media/, otherwise → MEDIA_BASE_URL_REMOTE
   // 'local' : force local cleaned_media/

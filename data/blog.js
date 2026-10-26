@@ -41,7 +41,7 @@ window.BLOG_POSTS = [
     date: "2024-03-24",
     category: "Shader",
     tags: ["shader", "unity"],
-    summary: "Unity Buit-in Pipeline",
+    summary: "Unity Built-in Pipeline",
     cover: "blog/pic/Toon.gif",
   },
   {

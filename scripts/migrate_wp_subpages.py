@@ -74,6 +74,11 @@ UNLISTED_CATEGORIES = {
     "easego-an-android-app-that-helps-seniors-show-the-health-code": "creative-coding",
 }
 SKIP_PAGES = {"home-2"}
+# Typos in the WordPress source, fixed on every regeneration.
+TEXT_FIXES = {
+    "CMU CG 15662 [C++ | CG algroithm]": "CMU 15-462 Computer Graphics [C++ | CG algorithms]",
+    "Buit-in": "Built-in",
+}
 
 ZERO_WIDTH_RE = re.compile("[\u200b\u200c\u200d\ufeff]")
 UPLOADS_RE = re.compile(r"/wp-content/uploads/(.+)$", re.IGNORECASE)
@@ -103,7 +108,10 @@ def text(el: ET.Element, path: str) -> str:
 
 def clean_title(s: str) -> str:
     s = ZERO_WIDTH_RE.sub("", html.unescape(s))
-    return re.sub(r"\s+", " ", s).strip()
+    s = re.sub(r"\s+", " ", s).strip()
+    for wrong, right in TEXT_FIXES.items():
+        s = s.replace(wrong, right)
+    return s
 
 
 def normalize_slug(post_name: str) -> str:

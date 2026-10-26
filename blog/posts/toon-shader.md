@@ -1,6 +1,6 @@
 ![](media:blog/pic/Toon.gif)
 
-Unity Buit-in Pipeline
+Unity Built-in Pipeline
 
 [Built-in shader variables](https://docs.unity3d.com/Manual/SL-UnityShaderVariables.html)
 
