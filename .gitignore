@@ -29,6 +29,8 @@ assets/js/dist
 # Media is hosted on Cloudflare R2 / CDN, never in Git
 uploads/
 cleaned_media/
+# Local-only WordPress source (export XML contains personal data)
+portfolio_Legacy/
 *.mp4
 *.mov
 *.webm

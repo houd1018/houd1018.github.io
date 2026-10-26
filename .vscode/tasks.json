@@ -16,7 +16,7 @@
     {
       "label": "Clean media (dry run)",
       "type": "shell",
-      "command": "python scripts/clean_uploads.py --extra assets/pic:blog/pic --dry-run",
+      "command": "python scripts/clean_uploads.py --extra _legacy_backup/assets/pic:blog/pic --dry-run",
       "problemMatcher": []
     }
   ]

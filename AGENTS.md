@@ -13,6 +13,13 @@ Full rules: [.github/copilot-instructions.md](.github/copilot-instructions.md). 
 - Single sources of truth: `data/projects.js` (`window.PROJECTS`) and `data/blog.js` (`window.BLOG_POSTS`).
 - Do not delete `_legacy_backup/` or `portfolio_Legacy/` without explicit user confirmation.
 
+## Infrastructure
+
+- Deploy: push to `main` → `.github/workflows/pages-deploy.yml` publishes an allowlist of site files to GitHub Pages.
+- Media: Cloudflare R2 bucket `houd1018-media`, public base `https://pub-af66391f274d47529898def605b4df9a.r2.dev/`; local mirror `cleaned_media/`; upload with `rclone copy cleaned_media r2:houd1018-media`.
+- Workflows: skills in `.github/skills/` (`add-project`, `add-blog`, `sync-media`, `migrate-wp`).
+- When conventions change, update `.github/copilot-instructions.md`, this file, the content instructions and affected skills in the same commit.
+
 ## Visual system
 
 - Hero `#4a4a4a`, curved white bottom edge, centered bio + social icons, CMYK (cyan/magenta/yellow/black) diagonal hand-drawn strokes with translucent overprint.

@@ -13,7 +13,7 @@ What it does
 * Always keeps masters, every GIF master, every video (.mp4/.mov/.webm/.m4v) and every PDF.
 * Deduplicates byte-identical masters (SHA-256, only for files with equal size).
 * Incrementally syncs kept files to the destination (unchanged files are skipped).
-* Optionally copies extra folders as-is (e.g. old blog images ``assets/pic`` -> ``blog/pic``).
+* Optionally copies extra folders as-is (e.g. old blog images ``_legacy_backup/assets/pic`` -> ``blog/pic``).
 * Writes ``<dest>/_manifest.json`` with the kept file list and a ``redirects`` map
   (dropped path -> kept path) used by the migration scripts to rewrite references.
 
@@ -22,7 +22,7 @@ Source files are never modified or deleted.
 Examples
 --------
     python scripts/clean_uploads.py --dry-run
-    python scripts/clean_uploads.py --extra assets/pic:blog/pic
+    python scripts/clean_uploads.py --extra _legacy_backup/assets/pic:blog/pic
     python scripts/clean_uploads.py --keep-gif-variants --verbose --dry-run
 """
 
@@ -229,7 +229,7 @@ def plan_library(
 
 def parse_extra(value: str) -> Tuple[Path, str]:
     if ":" not in value or value.rfind(":") <= 1:
-        raise argparse.ArgumentTypeError("expected SRC:PREFIX, e.g. assets/pic:blog/pic")
+        raise argparse.ArgumentTypeError("expected SRC:PREFIX, e.g. _legacy_backup/assets/pic:blog/pic")
     src, prefix = value.rsplit(":", 1)
     path = Path(src)
     if not path.is_absolute():
@@ -270,7 +270,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--src", type=Path, default=DEFAULT_SRC, help=f"WordPress uploads dir (default: {DEFAULT_SRC.relative_to(REPO_ROOT)})")
     p.add_argument("--dest", type=Path, default=DEFAULT_DEST, help=f"output dir (default: {DEFAULT_DEST.relative_to(REPO_ROOT)})")
     p.add_argument("--extra", type=parse_extra, action="append", default=[], metavar="SRC:PREFIX",
-                   help="copy another folder as-is under PREFIX, e.g. assets/pic:blog/pic (repeatable)")
+                   help="copy another folder as-is under PREFIX, e.g. _legacy_backup/assets/pic:blog/pic (repeatable)")
     p.add_argument("--dry-run", action="store_true", help="report only, write nothing")
     p.add_argument("--keep-gif-variants", action="store_true", help="also keep resized/edited GIF derivatives")
     p.add_argument("--keep-edited", action="store_true", help="keep WP editor crops (-e<timestamp>) as separate files")

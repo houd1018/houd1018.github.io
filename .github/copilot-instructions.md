@@ -1,8 +1,19 @@
 # houd1018.github.io — Copilot Global Rules
 
 Technical Artist portfolio + tech blog of Howard (Dazhou Hou).
-Live site: `https://houd1018.github.io` (GitHub Pages user-site repository).
+Live site: `https://houd1018.github.io` (GitHub Pages user-site repository, `main` branch).
 The WordPress backend is retired; all content is maintained through VS Code Copilot.
+
+## 0. Infrastructure at a glance
+
+| What | Where |
+|---|---|
+| Code, pages, posts | this repo; deployed by `.github/workflows/pages-deploy.yml` on push to `main` (Settings → Pages → Source: GitHub Actions) |
+| Deploy artifact | allowlist only: `index.html config.js .nojekyll css js data projects blog assets/img`; the build fails if videos or files > 2 MB slip in |
+| Media | Cloudflare R2 bucket `houd1018-media`, public base `https://pub-af66391f274d47529898def605b4df9a.r2.dev/` (= `MEDIA_BASE_URL_REMOTE` in `config.js`) |
+| Local media mirror | `cleaned_media/` (git-ignored); local pages load media from here, add `?media=remote` to test R2 |
+| Upload tool | `rclone` remote `r2:` (user-configured; never ask for or print keys) |
+| Local preview | `python -m http.server 8000` (VS Code task "Serve site locally") |
 
 ---
 
@@ -27,26 +38,27 @@ The WordPress backend is retired; all content is maintained through VS Code Copi
    - Markdown (blog): `![alt](media:blog/pic/water.gif)`; the blog renderer resolves the `media:` prefix.
 5. **Script order**: `config.js` must be the first site script on every page (classic `<script src>`, no `type="module"` or `async`), followed by `data/*.js`, then `js/*.js`. Subpages use relative paths (e.g. `../config.js`) so the site works via `file://`, a local server, and online.
 6. **Data is the single source of truth**:
-   - Project index: `data/projects.js` → `window.PROJECTS = [...]`; detail pages at `projects/<slug>.html`.
-   - Blog index: `data/blog.js` → `window.BLOG_POSTS = [...]`; post bodies at `blog/posts/<slug>.md` (no frontmatter, metadata lives only in `data/blog.js`), rendered by `blog/post.html?slug=<slug>`.
+   - Project index: `data/projects.js` → `window.PROJECTS = [...]`; detail pages at `projects/<slug>.html`. **Array order = grid order**; `listed: false` = sub-page hidden from the grid; `url` = external project without a page.
+   - Blog index: `data/blog.js` → `window.BLOG_POSTS = [...]`, newest first; post bodies at `blog/posts/<slug>.md` (no frontmatter, metadata lives only in `data/blog.js`), rendered by `blog/post.html?slug=<slug>`.
    - `slug` is always lowercase ASCII kebab-case and unique site-wide.
-7. **Archive, don't delete**: the old Jekyll/Chirpy files are archived in `_legacy_backup/`; `portfolio_Legacy/` holds the WordPress source material. Never delete either without explicit user confirmation.
+7. **Archive, don't delete**: old Jekyll/Chirpy files (including the old blog images `_legacy_backup/assets/pic/` and the Chirpy `LICENSE`) are archived in `_legacy_backup/`, which is never deployed. `portfolio_Legacy/` (WordPress export XML, prototype, uploads) is local-only and git-ignored. Never delete either without explicit user confirmation.
 
 ## 2. Directory layout
 
 ```
 index.html              Home: Hero (CMYK) / About / Projects grid / Blog highlights / Contact
 config.js               MEDIA_BASE_URL, getMediaUrl, hydrateMedia, siteUrl
-css/                    base.css (tokens/nav/footer) home.css content.css
+css/                    base.css (tokens/nav/page-hero/filters/footer) home.css content.css
 js/                     hero-sketch.js projects-grid.js content.js lightbox.js blog.js
 data/                   projects.js blog.js
-projects/               index.html + <slug>.html detail pages
+projects/               index.html + <slug>.html detail pages (mostly generated from WordPress)
 blog/                   index.html post.html posts/<slug>.md
-scripts/                clean_uploads.py migrate_wp_subpages.py (Python 3.8+, stdlib preferred)
-assets/                 small UI assets only (favicon/icons)
-_legacy_backup/         archived Jekyll site (read-only)
-portfolio_Legacy/       WP export XML, prototype, uploads (uploads is gitignored)
-cleaned_media/          cleaned media (gitignored, uploaded to R2)
+scripts/                clean_uploads.py migrate_wp_subpages.py migrate_blog_posts.py (Python 3.8+, stdlib only)
+assets/img/favicons/    small UI assets only
+.github/                copilot-instructions.md, instructions/, skills/, workflows/
+_legacy_backup/         archived Jekyll/Chirpy site + old blog images (read-only, not deployed)
+portfolio_Legacy/       local-only WP export XML, prototype, uploads (git-ignored)
+cleaned_media/          local media mirror (git-ignored, synced to R2)
 ```
 
 ## 3. Visual design
@@ -82,11 +94,23 @@ cleaned_media/          cleaned media (gitignored, uploaded to R2)
 - External links with `target="_blank"` must have `rel="noopener noreferrer"`; YouTube embeds use `youtube-nocookie.com`.
 - Python scripts: `argparse` CLI, provide `--dry-run`, never delete source files, force UTF-8 output on Windows (file names may contain CJK characters).
 
-## 6. Content workflows (slash commands)
+## 6. Content workflows (skills in `.github/skills/`, invoke with `/name`)
 
-- `/clean-media`: clean WP uploads → `cleaned_media/` (`scripts/clean_uploads.py`).
-- `/migrate-wp`: WordPress XML → `projects/<slug>.html` + `data/projects.js`.
-- `/add-project`: add a project (register in `data/projects.js` + generate detail page).
-- `/add-blog`: add a blog post (`blog/posts/<slug>.md` + `data/blog.js`).
+- `/add-project`: add or edit a project (`data/projects.js` + `projects/<slug>.html`).
+- `/add-blog`: add or edit a blog post (`blog/posts/<slug>.md` + `data/blog.js`).
+- `/sync-media`: put new media in `cleaned_media/`, upload to R2, verify; re-clean WordPress uploads.
+- `/migrate-wp`: re-run the WordPress / Jekyll migration scripts.
+
+Publishing = commit + push to `main`. Push only when the user asks.
+
+## 7. Keep these docs current
+
+These files are the project's memory. Whenever a change alters a convention, path, data field, script option, infrastructure detail or workflow, update in the same commit:
+- this file (rules, layout, infrastructure table),
+- `AGENTS.md` (short summary for other agents),
+- `.github/instructions/content-pages.instructions.md` (page/data formats),
+- the affected `.github/skills/*/SKILL.md`.
+
+Never store secrets (API keys, tokens) in any of them.
 
 Content page layout details: `.github/instructions/content-pages.instructions.md`.
