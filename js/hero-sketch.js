@@ -17,12 +17,15 @@
   var coverFit = hero.getAttribute('data-sketch-fit') === 'cover';
 
   var DESIGN_H = 680;
-  // Where the cursor passes over a line, that part darkens as if traced again, then fades back.
+  // Where the cursor passes over a line, that part is pressed again: it swells and turns fully opaque, then fades back.
   var INK_RADIUS_PX = 30;
   var INK_FADE = 0.7;
-  // Re-inked parts swell (pen pressure) and shift to a deeper tone of their colour.
   var INK_SWELL = 0.9;
-  var INK_DEEPEN = 0.55;
+  // The thin echo line drifts further off the main stroke where it is re-inked.
+  var ECHO_SPLIT = 1.8;
+  // Crossing a line while moving flicks a few ink drops off it, in the direction of travel.
+  var FLICK_CHANCE = 0.35;
+  var FLICK_PER_FRAME = 3;
   // Lines near the cursor ease aside like hair under a fingertip, then settle back; no spring.
   var PART_RADIUS_PX = 80;
   var PART_PUSH_PX = 18;
@@ -72,7 +75,6 @@
     }
     c.pts = pts;
     c.rgb = hexToRgb(c.color);
-    c.deepColor = 'rgb(' + c.rgb.map(function (v) { return Math.round(v * 255 * (1 - INK_DEEPEN)); }).join(',') + ')';
     c.index = index;
     c.offsetX = 0;
     c.offsetY = 0;
@@ -85,7 +87,7 @@
   // ------------------------------------------------------------------ view & input
 
   var view = { scale: 1, ox: 0, oy: 0, dpr: 1, w: 0, h: 0 };
-  var pointer = { x: -1e4, y: -1e4, active: false, cssX: 0, cssY: 0, amount: 0 };
+  var pointer = { x: -1e4, y: -1e4, active: false, cssX: 0, cssY: 0, amount: 0, mx: 0, my: 0 };
   var target = { x: 0, y: 0 };
   var smooth = { x: 0, y: 0 };
   var renderer = null;
@@ -121,8 +123,14 @@
     var rect = hero.getBoundingClientRect();
     target.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
     target.y = ((e.clientY - rect.top) / rect.height) * 2 - 1;
-    pointer.x = (e.clientX - rect.left - view.ox) / view.scale;
-    pointer.y = (e.clientY - rect.top - view.oy) / view.scale;
+    var nx = (e.clientX - rect.left - view.ox) / view.scale;
+    var ny = (e.clientY - rect.top - view.oy) / view.scale;
+    if (pointer.active) {
+      pointer.mx += nx - pointer.x;
+      pointer.my += ny - pointer.y;
+    }
+    pointer.x = nx;
+    pointer.y = ny;
     pointer.cssX = e.clientX - rect.left;
     pointer.cssY = e.clientY - rect.top;
     pointer.active = true;
@@ -266,6 +274,11 @@
     var partR2 = partR * partR;
     var partPush = PART_PUSH_PX / view.scale;
     var partK = 1 - Math.exp(-dt * PART_EASE);
+    var moveLen = Math.sqrt(pointer.mx * pointer.mx + pointer.my * pointer.my);
+    var moveX = moveLen > 0 ? pointer.mx / moveLen : 0;
+    var moveY = moveLen > 0 ? pointer.my / moveLen : 0;
+    var moving = moveLen > 1.5;
+    pointer.mx = pointer.my = 0;
     var t = time * 0.001;
 
     for (var c = 0; c < CLUSTERS.length; c++) {
@@ -278,8 +291,12 @@
       var mx = pointer.x - cl.offsetX;
       var my = pointer.y - cl.offsetY;
       var pts = cl.pts;
+      var specks = cl.specks || (cl.specks = []);
+      var flicks = 0;
+      var last = pts.length - 1;
       for (var i = 0; i < pts.length; i++) {
         var p = pts[i];
+        var prevInk = p.ink;
         p.ink *= inkDecay;
         var tx = 0;
         var ty = 0;
@@ -291,6 +308,22 @@
             var f = 1 - Math.sqrt(d2) / radius;
             f = f * f * (3 - 2 * f);
             if (f > p.ink) p.ink = f;
+            // Only visible parts of the line, and only on a fresh crossing.
+            var visible = i >= cl.tail * last && i <= cl.head * last;
+            if (moving && visible && f > 0.6 && prevInk < 0.3 && flicks < FLICK_PER_FRAME &&
+                specks.length < SPECK_MAX && Math.random() < FLICK_CHANCE) {
+              flicks++;
+              var sp = 0.15 + Math.random() * 0.25;
+              specks.push({
+                x: p.x + p.px + moveX * 4 + (Math.random() - 0.5) * 6,
+                y: p.y + p.py + moveY * 4 + (Math.random() - 0.5) * 6,
+                vx: moveX * sp + (Math.random() - 0.5) * 0.1,
+                vy: moveY * sp + (Math.random() - 0.5) * 0.1,
+                r: Math.random() < 0.15 ? 1.6 + Math.random() * 1.0 : 0.6 + Math.random() * 1.0,
+                age: 0,
+                life: 0.6 + Math.random() * 0.7,
+              });
+            }
           }
           if (d2 < partR2) {
             var d = Math.sqrt(d2) || 1e-3;
@@ -412,9 +445,9 @@
     '  float grain = mix(0.85, 1.0, noise(vec2(along * 0.9, uSeed)));',
     '  float alpha = uAlpha * edge * grain * mix(0.75, 1.0, depth);',
     '  vec3 col = min(uColor * mix(0.85, 1.1, tube) * mix(0.85, 1.0, depth), 1.0);',
-    // Re-inked parts: fully opaque and a deeper tone, like a second, harder pass of the crayon.
+    // Re-inked parts: fully opaque and full-strength colour, like a second, harder pass of the crayon.
     '  alpha = mix(alpha, edge, ink);',
-    '  col *= 1.0 - ' + INK_DEEPEN.toFixed(2) + ' * ink;',
+    '  col = mix(col, uColor, ink);',
     '  gl_FragColor = vec4(col * alpha, alpha);',
     '}',
   ].join('\n');
@@ -552,10 +585,10 @@
       var aaPad = 1.5 / (view.scale * view.dpr);
       for (var i = 0; i < n - 1; i++) {
         var pad = halfWidth * (1 + INK_SWELL * Math.max(vis.ink[i], vis.ink[i + 1])) + aaPad;
-        var ax = vis.x[i] + shiftX;
-        var ay = vis.y[i] + shiftY;
-        var bx = vis.x[i + 1] + shiftX;
-        var by = vis.y[i + 1] + shiftY;
+        var ax = vis.x[i] + shiftX * (1 + ECHO_SPLIT * vis.ink[i]);
+        var ay = vis.y[i] + shiftY * (1 + ECHO_SPLIT * vis.ink[i]);
+        var bx = vis.x[i + 1] + shiftX * (1 + ECHO_SPLIT * vis.ink[i + 1]);
+        var by = vis.y[i + 1] + shiftY * (1 + ECHO_SPLIT * vis.ink[i + 1]);
         var dx = bx - ax;
         var dy = by - ay;
         var len = Math.sqrt(dx * dx + dy * dy);
@@ -697,8 +730,11 @@
 
     function tracePath(c2, shiftX, shiftY) {
       c2.beginPath();
-      c2.moveTo(vis.x[0] + shiftX, vis.y[0] + shiftY);
-      for (var i = 1; i < vis.n; i++) c2.lineTo(vis.x[i] + shiftX, vis.y[i] + shiftY);
+      for (var i = 0; i < vis.n; i++) {
+        var k = 1 + ECHO_SPLIT * vis.ink[i];
+        if (i) c2.lineTo(vis.x[i] + shiftX * k, vis.y[i] + shiftY * k);
+        else c2.moveTo(vis.x[i] + shiftX * k, vis.y[i] + shiftY * k);
+      }
     }
 
     return {
@@ -726,6 +762,16 @@
           lctx.lineWidth = STROKE_WIDTH;
           tracePath(lctx, 0, 0);
           lctx.stroke();
+          // Re-inked segments swell, inside the same layer so they don't stack.
+          for (var k = 1; k < vis.n; k++) {
+            var ink = Math.max(vis.ink[k - 1], vis.ink[k]);
+            if (ink < 0.02) continue;
+            lctx.lineWidth = STROKE_WIDTH * (1 + INK_SWELL * ink);
+            lctx.beginPath();
+            lctx.moveTo(vis.x[k - 1], vis.y[k - 1]);
+            lctx.lineTo(vis.x[k], vis.y[k]);
+            lctx.stroke();
+          }
           var specks = cl.specks || [];
           lctx.fillStyle = cl.color;
           for (var s = 0; s < specks.length; s++) {
@@ -740,21 +786,6 @@
           ctx.globalCompositeOperation = 'multiply';
           ctx.globalAlpha = cl.alpha;
           ctx.drawImage(layer, 0, 0);
-
-          // Re-ink pass: darken the segments the cursor recently traced over.
-          ctx.setTransform(m[0], m[1], m[2], m[3], m[4], m[5]);
-          ctx.lineCap = 'round';
-          ctx.strokeStyle = cl.deepColor;
-          for (var k = 1; k < vis.n; k++) {
-            var ink = (vis.ink[k - 1] + vis.ink[k]) / 2;
-            if (ink < 0.02) continue;
-            ctx.globalAlpha = ink;
-            ctx.lineWidth = STROKE_WIDTH * (1 + INK_SWELL * ink);
-            ctx.beginPath();
-            ctx.moveTo(vis.x[k - 1], vis.y[k - 1]);
-            ctx.lineTo(vis.x[k], vis.y[k]);
-            ctx.stroke();
-          }
 
           ctx.setTransform(m[0], m[1], m[2], m[3], m[4], m[5]);
           ctx.lineCap = 'round';
