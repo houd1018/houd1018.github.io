@@ -37,6 +37,7 @@ Notes: [Houdini notes](../blog/post.html?slug=houdini-intro)
 
 :::gallery 3
 ![City level overview](media:2024/08/2024-08-13-18-13-39.mp4)
+![Procedural city level art](vimeo:1005547377)
 ![Procedural utility pole](media:2024/08/Utility-Pole.mp4)
 ![Procedural fence](media:2024/08/Fence.mp4)
 :::
