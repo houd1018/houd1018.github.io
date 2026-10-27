@@ -21,7 +21,7 @@
   var ECHO_WIDTH = 2.4;
   var DRAW_DURATION = 2.4;
   var ERASE_DURATION = 1.1;
-  var IDLE_REDRAW_MS = 30000;
+  var IDLE_REDRAW_MS = 10000;
 
   // Drawn back-to-front; depth scales parallax, delay staggers the intro (seconds).
   var CLUSTERS = [
@@ -185,14 +185,14 @@
 
   // ------------------------------------------------------------------ ink specks
 
-  // While a stroke is being drawn, tiny ink drops spatter around the pen tip and fade out.
+  // While a stroke is drawn (pen tip) or erased (trailing end), tiny ink drops spatter and fade out.
   var SPECK_RATE = 22;
   var SPECK_MAX = 40;
   var lastStepTime = null;
 
-  function tipOf(cl) {
+  function tipOf(cl, progress) {
     var pts = cl.pts;
-    var f = cl.head * (pts.length - 1);
+    var f = progress * (pts.length - 1);
     var i = Math.min(Math.floor(f), pts.length - 2);
     var t = f - i;
     var a = pts[i];
@@ -202,11 +202,14 @@
 
   function stepSpecks(cl, dt) {
     var specks = cl.specks || (cl.specks = []);
-    if (anim.mode === 'drawing' && cl.head > 0 && cl.head < 1 && specks.length < SPECK_MAX) {
+    var progress = -1;
+    if (anim.mode === 'drawing' && cl.head > 0 && cl.head < 1) progress = cl.head;
+    else if (anim.mode === 'erasing' && cl.tail > 0 && cl.tail < 1) progress = cl.tail;
+    if (progress >= 0 && specks.length < SPECK_MAX) {
       var expected = SPECK_RATE * dt;
       while (expected > 0) {
         if (Math.random() < Math.min(1, expected)) {
-          var tip = tipOf(cl);
+          var tip = tipOf(cl, progress);
           var len = Math.sqrt(tip.dx * tip.dx + tip.dy * tip.dy) || 1;
           // Mostly flung sideways from the direction of travel.
           var side = Math.random() < 0.5 ? -1 : 1;
