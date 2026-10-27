@@ -249,11 +249,16 @@
       var s = specks[i];
       s.age += dt;
       if (s.drip) {
+        var lastPt = cl.pts.length - 1;
+        // The erase pass wipes drips along with the part of the line they hang from.
+        if (s.age >= s.life || s.i < cl.tail * lastPt || s.i > cl.head * lastPt) {
+          specks.splice(i, 1);
+          continue;
+        }
         // Hangs from its line point (follows breathing/parting); runs fast at first, then slows and stops.
         s.x = s.pt.x + s.pt.px;
         s.y0 = s.pt.y + s.pt.py;
         s.y = s.y0 + s.len * (1 - Math.exp(-s.age * s.k));
-        if (s.age >= s.life) specks.splice(i, 1);
         continue;
       }
       s.x += s.vx;
@@ -335,12 +340,13 @@
                   specks.push({
                     drip: true,
                     pt: p,
+                    i: i,
                     x: lx, y: ly, y0: ly,
                     len: DRIP_LEN * (0.6 + Math.random() * 0.4),
-                    k: 0.5 + Math.random() * 0.4,
+                    k: 1.1 + Math.random() * 0.5,
                     r: 1.6 + Math.random() * 0.9,
                     age: 0,
-                    life: 3.5 + Math.random() * 1.0,
+                    life: 2.0 + Math.random() * 0.6,
                   });
                 } else {
                   var sp = 0.5 + Math.random() * 0.7;
