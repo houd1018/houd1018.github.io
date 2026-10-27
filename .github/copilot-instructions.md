@@ -80,6 +80,8 @@ cleaned_media/          local media mirror (git-ignored, synced to R2)
 
 ## 4. Interaction guidelines
 
+- **Intro**: on first view each color's stroke "sprawls out" along its path (eased, staggered cyan → magenta → yellow → black, tapered pen tip) while the hero text fades up.
+- **Strokes**: pressure-varying width, drawn opaque per color on an offscreen layer and composited with `multiply`; each loop has a z value for per-vertex parallax.
 - **Calm and refined**: strokes never jitter at high frequency; they only drift with a gentle, staggered vertical "breathing" (low-frequency sine, per-stroke phase/amplitude, a few pixels).
 - **3D parallax**: on mouse move, layers offset by depth with eased interpolation (no hard snapping to the cursor).
 - **String pluck**: when the cursor passes over a stroke, vertices within a radius of `≈42px` are pushed away elastically and spring back with damping.

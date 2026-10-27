@@ -1,4 +1,5 @@
-/* Home hero: CMYK crayon scribbles with overprint, calm breathing, eased 3D parallax and local string pluck. */
+/* Home hero: CMYK crayon scribbles that sprawl out on load, with overprint, tapered pressure strokes,
+ * calm breathing, per-vertex 3D parallax and local string pluck. Canvas 2D, no dependencies. */
 (function (global) {
   'use strict';
 
@@ -11,19 +12,20 @@
   var content = doc.getElementById('hero-content');
   var reduceMotion = global.matchMedia && global.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // Design space; the canvas covers the hero like `object-fit: cover`.
-  var DESIGN_W = 1200;
   var DESIGN_H = 680;
   var PLUCK_RADIUS_PX = 42;
   var STIFFNESS = 0.09;
   var DAMPING = 0.82;
+  var STROKE_WIDTH = 7.5;
+  var DRAW_DURATION = 2.4;
+  var TIP_POINTS = 14;
 
-  // Drawn back-to-front; depth scales parallax.
+  // Drawn back-to-front; depth scales parallax, delay staggers the intro (seconds).
   var CLUSTERS = [
-    { color: '#1a1a1a', alpha: 0.62, cx: 790, cy: 300, r: 170, depth: 0.45, phase: 0.0 },
-    { color: '#00a6e4', alpha: 0.72, cx: 430, cy: 300, r: 170, depth: 1.3, phase: 1.7 },
-    { color: '#e0137f', alpha: 0.66, cx: 545, cy: 296, r: 175, depth: 1.0, phase: 3.1 },
-    { color: '#f3e500', alpha: 0.7, cx: 668, cy: 300, r: 175, depth: 0.75, phase: 4.6 },
+    { color: '#1a1a1a', alpha: 0.62, cx: 790, cy: 300, r: 170, depth: 0.45, phase: 0.0, delay: 0.9 },
+    { color: '#00a6e4', alpha: 0.74, cx: 430, cy: 300, r: 170, depth: 1.3, phase: 1.7, delay: 0.0 },
+    { color: '#e0137f', alpha: 0.68, cx: 545, cy: 296, r: 175, depth: 1.0, phase: 3.1, delay: 0.3 },
+    { color: '#f3e500', alpha: 0.72, cx: 668, cy: 300, r: 175, depth: 0.75, phase: 4.6, delay: 0.6 },
   ];
 
   var TILT = -0.5;
@@ -50,17 +52,31 @@
     for (var i = 0; i <= total; i++) {
       var u = i / total;
       var env = Math.sin(u * Math.PI);
+      var angle = u * LOOPS * Math.PI * 2;
       var wobble = 0.86 + 0.22 * Math.sin(i * 1.1 + index * 2.3) + (rand() - 0.5) * 0.08;
       var halfW = c.r * (0.3 + 0.7 * env) * wobble;
-      var lx = Math.cos(u * LOOPS * Math.PI * 2) * halfW;
+      var lx = Math.cos(angle) * halfW;
       var ly = (u - 0.5) * c.r * 2 + (rand() - 0.5) * 6;
       var x = c.cx + lx * cosT - ly * sinT;
       var y = c.cy + lx * sinT + ly * cosT;
-      pts.push({ x: x, y: y, ox: x, oy: y, vx: 0, vy: 0, seed: rand() * Math.PI * 2 });
+      pts.push({
+        x: x,
+        y: y,
+        ox: x,
+        oy: y,
+        vx: 0,
+        vy: 0,
+        // Each loop is treated as a helix: front half of the loop is nearer the viewer.
+        z: Math.sin(angle),
+        // Pen pressure: heavier mid-stroke, lighter on the turns.
+        w: (0.55 + 0.45 * env) * (0.75 + 0.25 * Math.abs(Math.sin(angle))) * (0.9 + rand() * 0.2),
+        seed: rand() * Math.PI * 2,
+      });
     }
     c.pts = pts;
     c.offsetX = 0;
     c.offsetY = 0;
+    c.progress = reduceMotion ? 1 : 0;
   }
 
   CLUSTERS.forEach(buildCluster);
@@ -95,7 +111,7 @@
     canvas.style.height = rect.height + 'px';
     // Contain-fit by height; on narrow screens let the scribbles span most of the width.
     view.scale = Math.min(rect.height / DESIGN_H, rect.width / 800);
-    view.ox = (rect.width - DESIGN_W * view.scale) / 2;
+    view.ox = (rect.width - 1200 * view.scale) / 2;
     // Center the scribble cluster (design y≈300) on the hero text block.
     var anchorY = rect.height / 2;
     if (content) {
@@ -108,6 +124,7 @@
   var pointer = { x: -1e4, y: -1e4, vx: 0, vy: 0, active: false };
   var target = { x: 0, y: 0 };
   var smooth = { x: 0, y: 0 };
+  var startTime = null;
 
   function onPointerMove(e) {
     var rect = hero.getBoundingClientRect();
@@ -131,7 +148,14 @@
     pointer.vx = pointer.vy = 0;
   }
 
+  function easeInOutCubic(t) {
+    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  }
+
   function step(time) {
+    if (startTime === null) startTime = time;
+    var elapsed = (time - startTime) / 1000;
+
     smooth.x += (target.x - smooth.x) * 0.06;
     smooth.y += (target.y - smooth.y) * 0.06;
 
@@ -141,6 +165,9 @@
 
     for (var c = 0; c < CLUSTERS.length; c++) {
       var cl = CLUSTERS[c];
+      if (cl.progress < 1) {
+        cl.progress = easeInOutCubic(Math.min(1, Math.max(0, (elapsed - cl.delay) / DRAW_DURATION)));
+      }
       // Slow (~9 s) breathing with per-cluster phase.
       var breath = Math.sin(t * 0.7 + cl.phase) * 4;
       cl.offsetX = -smooth.x * 38 * cl.depth;
@@ -183,36 +210,111 @@
       'rotateX(' + (-smooth.y * 4).toFixed(2) + 'deg) rotateY(' + (smooth.x * 5).toFixed(2) + 'deg)';
   }
 
-  function tracePath(pts, ox, oy, jitter) {
-    ctx.beginPath();
-    for (var i = 0; i < pts.length; i++) {
-      var x = pts[i].x + ox + (jitter ? Math.cos(pts[i].seed) * jitter : 0);
-      var y = pts[i].y + oy + (jitter ? Math.sin(pts[i].seed) * jitter : 0);
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
+  // Visible part of the stroke in screen-design space, including an interpolated pen tip.
+  var bufX = [];
+  var bufY = [];
+  var bufW = [];
+
+  function collect(cl) {
+    var pts = cl.pts;
+    var last = pts.length - 1;
+    var head = cl.progress * last;
+    var n = Math.floor(head);
+    var frac = head - n;
+    // Per-vertex parallax: near loop halves shift more than far ones.
+    var zx = -smooth.x * 14;
+    var zy = -smooth.y * 10;
+    var count = 0;
+    for (var i = 0; i <= n; i++) {
+      var p = pts[i];
+      bufX[count] = p.x + cl.offsetX + zx * p.z;
+      bufY[count] = p.y + cl.offsetY + zy * p.z;
+      bufW[count] = p.w;
+      count++;
     }
+    if (n < last && frac > 0) {
+      var a = pts[n];
+      var b = pts[n + 1];
+      bufX[count] = a.x + (b.x - a.x) * frac + cl.offsetX + zx * (a.z + (b.z - a.z) * frac);
+      bufY[count] = a.y + (b.y - a.y) * frac + cl.offsetY + zy * (a.z + (b.z - a.z) * frac);
+      bufW[count] = a.w;
+      count++;
+    }
+    return count;
+  }
+
+  // Pressure-varying stroke drawn opaque on a scratch layer (round joins, no self-overlap darkening),
+  // then composited once per color with the cluster alpha.
+  var layer = doc.createElement('canvas');
+  var lctx = layer.getContext('2d');
+
+  function strokeVarying(count, drawing) {
+    if (count < 2) return;
+    var bucket = -1;
+    for (var i = 1; i < count; i++) {
+      var taper = Math.min(1, i / 6);
+      var tail = count - 1 - i;
+      if (tail < TIP_POINTS) {
+        taper *= drawing ? Math.pow(tail / TIP_POINTS, 0.7) * 0.8 + 0.2 : Math.min(1, (tail + 1) / 6);
+      }
+      // Quantize widths so consecutive segments share one path.
+      var width = Math.max(0.6, Math.round(STROKE_WIDTH * bufW[i] * taper * 2) / 2);
+      if (width !== bucket) {
+        if (bucket > 0) lctx.stroke();
+        bucket = width;
+        lctx.lineWidth = width;
+        lctx.beginPath();
+        lctx.moveTo(bufX[i - 1], bufY[i - 1]);
+      }
+      lctx.lineTo(bufX[i], bufY[i]);
+    }
+    lctx.stroke();
+  }
+
+  function strokeEcho(count) {
+    if (count < 2) return;
+    ctx.beginPath();
+    ctx.moveTo(bufX[0] + 3, bufY[0] - 2);
+    for (var i = 1; i < count; i++) ctx.lineTo(bufX[i] + 3, bufY[i] - 2);
+    ctx.stroke();
   }
 
   function draw() {
+    var designTransform = [view.dpr * view.scale, 0, 0, view.dpr * view.scale, view.dpr * view.ox, view.dpr * view.oy];
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.setTransform(view.dpr * view.scale, 0, 0, view.dpr * view.scale, view.dpr * view.ox, view.dpr * view.oy);
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    // Overlaps multiply (overprint); strokes over the transparent canvas keep their own color.
-    ctx.globalCompositeOperation = 'multiply';
+    if (layer.width !== canvas.width || layer.height !== canvas.height) {
+      layer.width = canvas.width;
+      layer.height = canvas.height;
+    }
 
     for (var c = 0; c < CLUSTERS.length; c++) {
       var cl = CLUSTERS[c];
-      ctx.strokeStyle = cl.color;
+      if (cl.progress <= 0) continue;
+      var count = collect(cl);
+
+      lctx.setTransform(1, 0, 0, 1, 0, 0);
+      lctx.clearRect(0, 0, layer.width, layer.height);
+      lctx.setTransform.apply(lctx, designTransform);
+      lctx.lineCap = 'round';
+      lctx.lineJoin = 'round';
+      lctx.strokeStyle = cl.color;
+      strokeVarying(count, cl.progress < 1);
+
+      // Overlaps between colors multiply (overprint); over the transparent canvas they keep their own color.
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.globalCompositeOperation = 'multiply';
       ctx.globalAlpha = cl.alpha;
-      ctx.lineWidth = 7;
-      tracePath(cl.pts, cl.offsetX, cl.offsetY, 0);
-      ctx.stroke();
-      ctx.globalAlpha = cl.alpha * 0.5;
-      ctx.lineWidth = 3;
-      tracePath(cl.pts, cl.offsetX + 3, cl.offsetY - 2, 1.4);
-      ctx.stroke();
+      ctx.drawImage(layer, 0, 0);
+
+      // Thin offset echo line gives the doubled crayon edge.
+      ctx.setTransform.apply(ctx, designTransform);
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = cl.color;
+      ctx.globalAlpha = cl.alpha * 0.45;
+      ctx.lineWidth = 2.4;
+      strokeEcho(count);
     }
 
     ctx.globalAlpha = 1;
@@ -246,20 +348,15 @@
   draw();
   hero.classList.add('hero--ready');
 
-  if (reduceMotion) {
-    global.addEventListener('resize', function () {
-      resize();
-      draw();
-    });
-    return;
-  }
-
-  hero.addEventListener('pointermove', onPointerMove, { passive: true });
-  hero.addEventListener('pointerleave', onPointerLeave);
   global.addEventListener('resize', function () {
     resize();
     draw();
   });
+
+  if (reduceMotion) return;
+
+  hero.addEventListener('pointermove', onPointerMove, { passive: true });
+  hero.addEventListener('pointerleave', onPointerLeave);
 
   if ('IntersectionObserver' in global) {
     new IntersectionObserver(function (entries) {
