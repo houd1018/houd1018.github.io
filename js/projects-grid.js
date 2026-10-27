@@ -78,22 +78,120 @@
     return card;
   }
 
+  var DURATION = 450;
+  var EASING = 'cubic-bezier(0.22, 0.61, 0.36, 1)';
+
+  function canAnimate() {
+    var reduce = global.matchMedia && global.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    return !reduce && typeof doc.body.animate === 'function';
+  }
+
   function init(grid) {
     var projects = (global.PROJECTS || []).filter(function (p) {
       return p.listed !== false;
     });
     var filtersEl = doc.querySelector('[data-projects-filters]');
     var active = 'all';
+    var cards = projects.map(renderCard);
+    var shown = [];
 
-    function render() {
-      grid.textContent = '';
-      projects
-        .filter(function (p) {
-          return active === 'all' || p.category === active;
-        })
-        .forEach(function (p) {
-          grid.appendChild(renderCard(p));
+    function visibleIndexes() {
+      var out = [];
+      projects.forEach(function (p, i) {
+        if (active === 'all' || p.category === active) out.push(i);
+      });
+      return out;
+    }
+
+    function render(animate) {
+      var next = visibleIndexes();
+      if (!animate || !canAnimate()) {
+        grid.textContent = '';
+        next.forEach(function (i) {
+          grid.appendChild(cards[i]);
         });
+        shown = next;
+        return;
+      }
+
+      // FLIP: record positions, re-layout, then animate from old to new.
+      var gridRect = grid.getBoundingClientRect();
+      var first = {};
+      shown.forEach(function (i) {
+        first[i] = cards[i].getBoundingClientRect();
+      });
+
+      var leaving = shown.filter(function (i) {
+        return next.indexOf(i) < 0;
+      });
+      leaving.forEach(function (i) {
+        var card = cards[i];
+        var r = first[i];
+        card.getAnimations().forEach(function (a) {
+          a.cancel();
+        });
+        card.style.position = 'absolute';
+        card.style.left = r.left - gridRect.left + 'px';
+        card.style.top = r.top - gridRect.top + 'px';
+        card.style.width = r.width + 'px';
+        card.style.height = r.height + 'px';
+        card.style.pointerEvents = 'none';
+      });
+
+      next.forEach(function (i) {
+        var card = cards[i];
+        card.removeAttribute('style');
+        grid.appendChild(card);
+      });
+      leaving.forEach(function (i) {
+        grid.appendChild(cards[i]);
+      });
+
+      next.forEach(function (i) {
+        var card = cards[i];
+        card.getAnimations().forEach(function (a) {
+          a.cancel();
+        });
+        if (first[i]) {
+          var last = card.getBoundingClientRect();
+          var dx = first[i].left - last.left;
+          var dy = first[i].top - last.top;
+          if (dx || dy) {
+            card.animate(
+              [{ transform: 'translate(' + dx + 'px,' + dy + 'px)' }, { transform: 'none' }],
+              { duration: DURATION, easing: EASING }
+            );
+          }
+        } else {
+          card.animate(
+            [
+              { transform: 'scale(0.001)', opacity: 0 },
+              { transform: 'scale(1)', opacity: 1 },
+            ],
+            { duration: DURATION, easing: EASING }
+          );
+        }
+      });
+
+      leaving.forEach(function (i) {
+        var card = cards[i];
+        var anim = card.animate(
+          [
+            { transform: 'scale(1)', opacity: 1 },
+            { transform: 'scale(0.001)', opacity: 0 },
+          ],
+          { duration: DURATION, easing: EASING, fill: 'forwards' }
+        );
+        anim.onfinish = function () {
+          anim.cancel();
+          card.removeAttribute('style');
+          if (next.indexOf(i) < 0 && visibleIndexes().indexOf(i) < 0 && card.parentNode === grid) {
+            grid.removeChild(card);
+          }
+        };
+      });
+
+      shown = next;
     }
 
     function renderFilters() {
@@ -104,16 +202,17 @@
         btn.type = 'button';
         btn.setAttribute('aria-pressed', String(f.id === active));
         btn.addEventListener('click', function () {
+          if (active === f.id) return;
           active = f.id;
           renderFilters();
-          render();
+          render(true);
         });
         filtersEl.appendChild(btn);
       });
     }
 
     renderFilters();
-    render();
+    render(false);
   }
 
   function boot() {

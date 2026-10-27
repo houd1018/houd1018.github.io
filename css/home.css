@@ -206,6 +206,7 @@
 /* ---------- Projects grid ---------- */
 
 .works-grid {
+  position: relative;
   display: grid;
   gap: 26px;
   grid-template-columns: 1fr;
