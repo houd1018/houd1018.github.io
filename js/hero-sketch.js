@@ -1,4 +1,4 @@
-/* Home hero: CMYK crayon scribbles that sprawl out on load and re-sketch on double-click or after idling.
+/* Home hero: CMYK crayon scribbles that sprawl out on load and re-sketch on double-click or on a fixed cycle.
  * WebGL renderer (tube shading, depth tint, soft crayon density, exact multiply overprint) with a Canvas 2D fallback.
  * Calm breathing, eased 3D parallax and local string pluck are shared by both renderers. */
 (function (global) {
@@ -24,7 +24,7 @@
   var ECHO_WIDTH = 2.4;
   var DRAW_DURATION = 2.4;
   var ERASE_DURATION = 1.1;
-  var IDLE_REDRAW_MS = 10000;
+  var REDRAW_CYCLE_MS = 10000;
 
   // Drawn back-to-front; depth scales parallax, delay staggers the intro (seconds).
   var CLUSTERS = [
@@ -105,14 +105,9 @@
     if (renderer) renderer.resize();
   }
 
-  var lastActivity = 0;
-
-  function markActivity() {
-    lastActivity = global.performance.now();
-  }
+  var shownAt = 0;
 
   function onPointerMove(e) {
-    markActivity();
     var rect = hero.getBoundingClientRect();
     target.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
     target.y = ((e.clientY - rect.top) / rect.height) * 2 - 1;
@@ -173,7 +168,7 @@
       }
       if (done) {
         setMode('shown', anim.start);
-        lastActivity = time;
+        shownAt = time;
       }
     } else if (anim.mode === 'erasing') {
       for (i = 0; i < CLUSTERS.length; i++) {
@@ -184,7 +179,7 @@
         for (i = 0; i < CLUSTERS.length; i++) CLUSTERS[i].head = CLUSTERS[i].tail = 0;
         setMode('drawing', time);
       }
-    } else if (!staticMode && time - lastActivity > IDLE_REDRAW_MS) {
+    } else if (!staticMode && time - shownAt > REDRAW_CYCLE_MS) {
       requestRedraw();
     }
   }
@@ -763,7 +758,6 @@
 
   if (reduceMotion) return;
 
-  markActivity();
   hero.addEventListener('pointermove', onPointerMove, { passive: true });
   hero.addEventListener('pointerleave', onPointerLeave);
   if (!staticMode) {
@@ -774,8 +768,6 @@
       requestRedraw();
     });
   }
-  global.addEventListener('scroll', markActivity, { passive: true });
-  global.addEventListener('keydown', markActivity);
 
   if ('IntersectionObserver' in global) {
     new IntersectionObserver(function (entries) {
