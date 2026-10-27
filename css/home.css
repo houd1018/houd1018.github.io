@@ -319,6 +319,19 @@
   }
 }
 
+.works-more {
+  margin-top: 36px;
+  text-align: center;
+}
+
+.works-more-btn {
+  border: 0;
+  font: inherit;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
 .work-card {
   display: flex;
   flex-direction: column;

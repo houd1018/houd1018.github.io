@@ -80,6 +80,8 @@
 
   var DURATION = 450;
   var EASING = 'cubic-bezier(0.22, 0.61, 0.36, 1)';
+  // Rows shown before "Load all"; the column count follows the responsive grid (3 / 2 / 1).
+  var COLLAPSED_ROWS = 3;
 
   function canAnimate() {
     var reduce = global.matchMedia && global.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -94,13 +96,31 @@
     var active = 'all';
     var cards = projects.map(renderCard);
     var shown = [];
+    var expanded = false;
 
-    function visibleIndexes() {
+    var more = el('div', 'works-more');
+    var moreBtn = el('button', 'btn works-more-btn', 'Load all');
+    moreBtn.type = 'button';
+    more.appendChild(moreBtn);
+    grid.parentNode.insertBefore(more, grid.nextSibling);
+
+    function columns() {
+      return Math.max(1, global.getComputedStyle(grid).gridTemplateColumns.split(' ').length);
+    }
+
+    function matchingIndexes() {
       var out = [];
       projects.forEach(function (p, i) {
         if (active === 'all' || p.category === active) out.push(i);
       });
       return out;
+    }
+
+    function visibleIndexes() {
+      var all = matchingIndexes();
+      var limit = columns() * COLLAPSED_ROWS;
+      more.hidden = expanded || all.length <= limit;
+      return expanded ? all : all.slice(0, limit);
     }
 
     function render(animate) {
@@ -213,6 +233,22 @@
 
     renderFilters();
     render(false);
+
+    moreBtn.addEventListener('click', function () {
+      var before = shown.length;
+      expanded = true;
+      render(true);
+      // The button disappears; keep keyboard focus on the first newly revealed card.
+      if (cards[shown[before]]) cards[shown[before]].focus({ preventScroll: true });
+    });
+
+    var lastColumns = columns();
+    global.addEventListener('resize', function () {
+      var c = columns();
+      if (c === lastColumns) return;
+      lastColumns = c;
+      if (!expanded) render(false);
+    });
   }
 
   function boot() {
