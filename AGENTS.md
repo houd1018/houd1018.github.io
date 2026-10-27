@@ -25,4 +25,4 @@ Full rules: [.github/copilot-instructions.md](.github/copilot-instructions.md). 
 - Hero `#4a4a4a`, curved white bottom edge, centered bio + social icons, CMYK (cyan/magenta/yellow/black) diagonal hand-drawn strokes with translucent overprint.
 - Cards `#f5f4f9`, titles `#df6c74`. Nav: `Home | About Me | Projects | Blog | Contact`.
 - Filters: `ALL | COMPUTER GRAPHICS | TECH ART | GAMES | CREATIVE CODING`.
-- Motion: calm low-frequency breathing, eased 3D parallax on mouse move, local elastic "string pluck" within radius ≈ 42px; honor `prefers-reduced-motion`.
+- Motion: calm low-frequency breathing, eased 3D parallax on mouse move, a "re-ink" trail (strokes under the cursor darken within ≈ 26px, then fade back); honor `prefers-reduced-motion`.

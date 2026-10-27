@@ -1,6 +1,6 @@
 /* Home hero: CMYK crayon scribbles that sprawl out on load and re-sketch on double-click or on a fixed cycle.
  * WebGL renderer (tube shading, depth tint, soft crayon density, exact multiply overprint) with a Canvas 2D fallback.
- * Calm breathing, eased 3D parallax and local string pluck are shared by both renderers. */
+ * Calm breathing, eased 3D parallax and a cursor "re-ink" trail are shared by both renderers. */
 (function (global) {
   'use strict';
 
@@ -17,7 +17,9 @@
   var coverFit = hero.getAttribute('data-sketch-fit') === 'cover';
 
   var DESIGN_H = 680;
-  var PLUCK_RADIUS_PX = 42;
+  // Where the cursor passes over a line, that part darkens as if traced again, then fades back.
+  var INK_RADIUS_PX = 26;
+  var INK_FADE = 1.2;
   var STIFFNESS = 0.09;
   var DAMPING = 0.82;
   var STROKE_WIDTH = 7;
@@ -59,7 +61,7 @@
       var x = c.cx + lx * cosT - ly * sinT;
       var y = c.cy + lx * sinT + ly * cosT;
       // Each loop is treated as a helix: z > 0 is the half nearer the viewer.
-      pts.push({ x: x, y: y, ox: x, oy: y, vx: 0, vy: 0, z: Math.sin(angle) });
+      pts.push({ x: x, y: y, ox: x, oy: y, vx: 0, vy: 0, z: Math.sin(angle), ink: 0 });
     }
     c.pts = pts;
     c.rgb = hexToRgb(c.color);
@@ -75,7 +77,7 @@
   // ------------------------------------------------------------------ view & input
 
   var view = { scale: 1, ox: 0, oy: 0, dpr: 1, w: 0, h: 0 };
-  var pointer = { x: -1e4, y: -1e4, vx: 0, vy: 0, active: false, cssX: 0, cssY: 0, amount: 0 };
+  var pointer = { x: -1e4, y: -1e4, active: false, cssX: 0, cssY: 0, amount: 0 };
   var target = { x: 0, y: 0 };
   var smooth = { x: 0, y: 0 };
   var renderer = null;
@@ -111,14 +113,8 @@
     var rect = hero.getBoundingClientRect();
     target.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
     target.y = ((e.clientY - rect.top) / rect.height) * 2 - 1;
-    var dx = (e.clientX - rect.left - view.ox) / view.scale;
-    var dy = (e.clientY - rect.top - view.oy) / view.scale;
-    if (pointer.active) {
-      pointer.vx = (dx - pointer.x) * 0.6 + pointer.vx * 0.4;
-      pointer.vy = (dy - pointer.y) * 0.6 + pointer.vy * 0.4;
-    }
-    pointer.x = dx;
-    pointer.y = dy;
+    pointer.x = (e.clientX - rect.left - view.ox) / view.scale;
+    pointer.y = (e.clientY - rect.top - view.oy) / view.scale;
     pointer.cssX = e.clientX - rect.left;
     pointer.cssY = e.clientY - rect.top;
     pointer.active = true;
@@ -128,7 +124,6 @@
     target.x = target.y = 0;
     pointer.active = false;
     pointer.x = pointer.y = -1e4;
-    pointer.vx = pointer.vy = 0;
   }
 
   // ------------------------------------------------------------------ animation state
@@ -256,8 +251,9 @@
     smooth.x += (target.x - smooth.x) * 0.06;
     smooth.y += (target.y - smooth.y) * 0.06;
 
-    var radius = PLUCK_RADIUS_PX / view.scale;
+    var radius = INK_RADIUS_PX / view.scale;
     var r2 = radius * radius;
+    var inkDecay = Math.exp(-dt * INK_FADE);
     var t = time * 0.001;
 
     for (var c = 0; c < CLUSTERS.length; c++) {
@@ -272,15 +268,15 @@
       var pts = cl.pts;
       for (var i = 0; i < pts.length; i++) {
         var p = pts[i];
+        p.ink *= inkDecay;
         if (pointer.active) {
           var dx = p.x - mx;
           var dy = p.y - my;
           var d2 = dx * dx + dy * dy;
-          if (d2 < r2 && d2 > 0.01) {
-            var d = Math.sqrt(d2);
-            var f = Math.pow(1 - d / radius, 1.4);
-            p.vx += (dx / d) * f * 4.5 + pointer.vx * f * 0.45;
-            p.vy += (dy / d) * f * 4.5 + pointer.vy * f * 0.45;
+          if (d2 < r2) {
+            var f = 1 - Math.sqrt(d2) / radius;
+            f = f * f * (3 - 2 * f);
+            if (f > p.ink) p.ink = f;
           }
         }
         // A slow wave travelling along the stroke; neighbours move together, so lines stay smooth.
@@ -293,8 +289,6 @@
         p.y += p.vy;
       }
     }
-    pointer.vx *= 0.85;
-    pointer.vy *= 0.85;
     pointer.amount += ((pointer.active ? 1 : 0) - pointer.amount) * 0.06;
 
     if (content) {
@@ -308,7 +302,7 @@
   // ------------------------------------------------------------------ visible geometry
 
   // Visible window [tail, head] of a stroke in design space.
-  var vis = { x: [], y: [], z: [], s: [], n: 0 };
+  var vis = { x: [], y: [], z: [], s: [], ink: [], n: 0 };
 
   function pushPoint(cl, f) {
     var pts = cl.pts;
@@ -321,6 +315,7 @@
     vis.x[k] = a.x + (b.x - a.x) * t + cl.offsetX;
     vis.y[k] = a.y + (b.y - a.y) * t + cl.offsetY;
     vis.z[k] = z;
+    vis.ink[k] = a.ink + (b.ink - a.ink) * t;
     vis.s[k] = f;
   }
 
@@ -343,11 +338,13 @@
     'attribute vec2 aPos;',
     'attribute vec4 aSeg;',
     'attribute vec4 aMeta;',
+    'attribute vec2 aInk;',
     'uniform vec4 uView;',
     'uniform vec2 uRes;',
     'varying vec2 vP;',
     'varying vec4 vSeg;',
     'varying vec4 vMeta;',
+    'varying vec2 vInk;',
     'void main() {',
     '  vec2 px = (aPos * uView.x + uView.yz) * uView.w;',
     '  vec2 clip = px / uRes * 2.0 - 1.0;',
@@ -355,6 +352,7 @@
     '  vP = aPos;',
     '  vSeg = aSeg;',
     '  vMeta = aMeta;',
+    '  vInk = aInk;',
     '}',
   ].join('\n');
 
@@ -368,6 +366,7 @@
     'varying vec2 vP;',
     'varying vec4 vSeg;',
     'varying vec4 vMeta;',
+    'varying vec2 vInk;',
     'float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }',
     'float noise(vec2 p) {',
     '  vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 * f);',
@@ -387,6 +386,10 @@
     '  float grain = mix(0.85, 1.0, noise(vec2(along * 0.9, uSeed)));',
     '  float alpha = uAlpha * edge * grain * mix(0.75, 1.0, depth);',
     '  vec3 col = min(uColor * mix(0.85, 1.1, tube) * mix(0.85, 1.0, depth), 1.0);',
+    // Re-inked parts: denser and a touch darker, like a second pass of the crayon.
+    '  float ink = mix(vInk.x, vInk.y, t);',
+    '  alpha = mix(alpha, min(1.0, alpha + 0.55 * edge), ink);',
+    '  col *= 1.0 - 0.28 * ink;',
     '  gl_FragColor = vec4(col * alpha, alpha);',
     '}',
   ].join('\n');
@@ -474,6 +477,7 @@
       pos: gl.getAttribLocation(strokeProg, 'aPos'),
       seg: gl.getAttribLocation(strokeProg, 'aSeg'),
       meta: gl.getAttribLocation(strokeProg, 'aMeta'),
+      ink: gl.getAttribLocation(strokeProg, 'aInk'),
       view: gl.getUniformLocation(strokeProg, 'uView'),
       res: gl.getUniformLocation(strokeProg, 'uRes'),
       color: gl.getUniformLocation(strokeProg, 'uColor'),
@@ -488,7 +492,7 @@
     gl.bindBuffer(gl.ARRAY_BUFFER, quad);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
 
-    var FLOATS = 10;
+    var FLOATS = 12;
     var maxVerts = (CLUSTERS[0].pts.length + 4) * 6;
     var data = new Float32Array(maxVerts * FLOATS);
     var vbo = gl.createBuffer();
@@ -552,6 +556,7 @@
           data[o++] = corners[c + 1];
           data[o++] = ax; data[o++] = ay; data[o++] = bx; data[o++] = by;
           data[o++] = vis.s[i]; data[o++] = vis.s[i + 1]; data[o++] = vis.z[i]; data[o++] = vis.z[i + 1];
+          data[o++] = vis.ink[i]; data[o++] = vis.ink[i + 1];
         }
       }
       return Math.max(0, n - 1) * 6;
@@ -569,6 +574,7 @@
         data[o++] = corners[c + 1];
         data[o++] = x; data[o++] = y; data[o++] = x; data[o++] = y;
         data[o++] = 0; data[o++] = 0; data[o++] = 1; data[o++] = 1;
+        data[o++] = 0; data[o++] = 0;
       }
       return 6;
     }
@@ -586,6 +592,8 @@
       gl.vertexAttribPointer(sLoc.seg, 4, gl.FLOAT, false, stride, 8);
       gl.enableVertexAttribArray(sLoc.meta);
       gl.vertexAttribPointer(sLoc.meta, 4, gl.FLOAT, false, stride, 24);
+      gl.enableVertexAttribArray(sLoc.ink);
+      gl.vertexAttribPointer(sLoc.ink, 2, gl.FLOAT, false, stride, 40);
       gl.drawArrays(gl.TRIANGLES, 0, count);
     }
 
@@ -704,6 +712,21 @@
           ctx.globalCompositeOperation = 'multiply';
           ctx.globalAlpha = cl.alpha;
           ctx.drawImage(layer, 0, 0);
+
+          // Re-ink pass: darken the segments the cursor recently traced over.
+          ctx.setTransform(m[0], m[1], m[2], m[3], m[4], m[5]);
+          ctx.lineCap = 'round';
+          ctx.strokeStyle = cl.color;
+          ctx.lineWidth = STROKE_WIDTH;
+          for (var k = 1; k < vis.n; k++) {
+            var ink = (vis.ink[k - 1] + vis.ink[k]) / 2;
+            if (ink < 0.02) continue;
+            ctx.globalAlpha = 0.65 * ink;
+            ctx.beginPath();
+            ctx.moveTo(vis.x[k - 1], vis.y[k - 1]);
+            ctx.lineTo(vis.x[k], vis.y[k]);
+            ctx.stroke();
+          }
 
           ctx.setTransform(m[0], m[1], m[2], m[3], m[4], m[5]);
           ctx.lineCap = 'round';

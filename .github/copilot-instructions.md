@@ -73,7 +73,7 @@ cleaned_media/          local media mirror (git-ignored, synced to R2)
 | `--cmyk-y` | `#fff200` | Yellow |
 | `--cmyk-k` | `#111111` | Black |
 
-- Hero: dark gray background, **curved white bottom edge** (inline SVG wave), centered bio + social icons; background of cyan/magenta/yellow/black **diagonal hand-drawn crayon strokes** with translucent overprint where they cross (Canvas 2D `multiply` compositing in `js/hero-sketch.js`), keeping a grainy hand-drawn feel. Subpages use a shorter `.page-hero` band with a diagonal edge; it hosts the same sketch (`id="hero"`, `<canvas id="hero-canvas">`, `data-sketch-mode="static"` = no intro/re-sketch/double-click, `data-sketch-fit="cover"`), keeping breathing, parallax, pluck and halftone dots.
+- Hero: dark gray background, **curved white bottom edge** (inline SVG wave), centered bio + social icons; background of cyan/magenta/yellow/black **diagonal hand-drawn crayon strokes** with translucent overprint where they cross (Canvas 2D `multiply` compositing in `js/hero-sketch.js`), keeping a grainy hand-drawn feel. Subpages use a shorter `.page-hero` band with a diagonal edge; it hosts the same sketch (`id="hero"`, `<canvas id="hero-canvas">`, `data-sketch-mode="static"` = no intro/re-sketch/double-click, `data-sketch-fit="cover"`), keeping breathing, parallax, re-ink trail and halftone dots.
 - Hero background: faint halftone dot screen; dots near the cursor swell slightly and take a cyan/magenta/yellow ink each (WebGL composite shader; static CSS dots in the 2D fallback). Print-proof marks (crop marks, registration targets, slug line, color bar) sit in `.hero-marks`, ~30% white, hidden partly on mobile.
 - Navigation (top right): `Home` | `About Me` | `Projects` | `Blog` | `Contact`, thin white type, same order on every page.
 - Project grid: filters `ALL | COMPUTER GRAPHICS | TECH ART | GAMES | CREATIVE CODING`; 3 columns desktop / 2 tablet / 1 mobile; light lavender-gray cards with coral titles; static cover that switches to a GIF/video preview on hover (lazy-loaded).
@@ -85,9 +85,9 @@ cleaned_media/          local media mirror (git-ignored, synced to R2)
 - **Rendering**: `js/hero-sketch.js` uses raw WebGL (no library): one layer per color with tube shading, depth tint from each loop's z, soft density variation along the stroke (no speckles), then an exact W3C `multiply` composite shader. Canvas 2D fallback (also via `?hero=2d`). Constant stroke width.
 - **Calm and refined**: strokes never jitter at high frequency; they only drift with a gentle, staggered vertical "breathing" (low-frequency sine, per-stroke phase/amplitude, a few pixels).
 - **3D parallax**: on mouse move, layers offset by depth with eased interpolation (no hard snapping to the cursor).
-- **String pluck**: when the cursor passes over a stroke, vertices within a radius of `≈42px` are pushed away elastically and spring back with damping.
+- **Re-ink trail**: where the cursor passes over a stroke (radius `≈26px`), that part darkens and becomes more opaque as if the pen traced it again, then fades back (`exp` decay, `INK_FADE`). Strokes never move under the cursor.
 - Prefer Canvas 2D / SVG; WebGPU/WebGL is an optional progressive enhancement with a fallback. Run `requestAnimationFrame` only while visible (`IntersectionObserver` / `visibilitychange`).
-- Honor `prefers-reduced-motion: reduce`: disable breathing, parallax and pluck; keep a static frame.
+- Honor `prefers-reduced-motion: reduce`: disable breathing, parallax and re-ink; keep a static frame.
 
 ## 5. Coding conventions
 
