@@ -108,6 +108,7 @@ Publishing = commit + push to `main`. Push only when the user asks.
 These files are the project's memory. Whenever a change alters a convention, path, data field, script option, infrastructure detail or workflow, update in the same commit:
 - this file (rules, layout, infrastructure table),
 - `AGENTS.md` (short summary for other agents),
+- `README.md` (human how-to for adding projects/posts),
 - `.github/instructions/content-pages.instructions.md` (page/data formats),
 - the affected `.github/skills/*/SKILL.md`.
 
