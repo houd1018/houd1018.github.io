@@ -23,9 +23,12 @@
   var INK_SWELL = 0.9;
   // The thin echo line drifts further off the main stroke where it is re-inked.
   var ECHO_SPLIT = 1.8;
-  // Crossing a line while moving flicks a few ink drops off it, in the direction of travel.
-  var FLICK_CHANCE = 0.7;
+  // Moving across a line flicks ink drops off it, in the direction of travel; they then drip downward.
+  var FLICK_CHANCE = 0.85;
   var FLICK_PER_FRAME = 6;
+  // Share of crossings that leave a drip running down from the line instead of a flicked drop.
+  var DRIP_SHARE = 0.5;
+  var DRIP_LEN = 30;
   // Lines near the cursor ease aside like hair under a fingertip, then settle back; no spring.
   var PART_RADIUS_PX = 80;
   var PART_PUSH_PX = 18;
@@ -247,8 +250,9 @@
       s.age += dt;
       s.x += s.vx;
       s.y += s.vy;
+      if (s.drip && s.y - s.y0 > DRIP_LEN) s.y0 = s.y - DRIP_LEN;
       s.vx *= 0.92;
-      s.vy *= 0.92;
+      s.vy = s.vy * 0.92 + (s.g || 0);
       if (s.age >= s.life) specks.splice(i, 1);
     }
   }
@@ -277,7 +281,7 @@
     var moveLen = Math.sqrt(pointer.mx * pointer.mx + pointer.my * pointer.my);
     var moveX = moveLen > 0 ? pointer.mx / moveLen : 0;
     var moveY = moveLen > 0 ? pointer.my / moveLen : 0;
-    var moving = moveLen > 1.5;
+    var moving = moveLen > 0.4;
     pointer.mx = pointer.my = 0;
     var t = time * 0.001;
 
@@ -296,8 +300,9 @@
       var last = pts.length - 1;
       for (var i = 0; i < pts.length; i++) {
         var p = pts[i];
-        var prevInk = p.ink;
         p.ink *= inkDecay;
+        // Re-arm once the re-ink has faded, so each pass over a point drips at most once.
+        if (p.ink < 0.15) p.dripped = false;
         var tx = 0;
         var ty = 0;
         if (pointer.active) {
@@ -310,19 +315,40 @@
             if (f > p.ink) p.ink = f;
             // Only visible parts of the line, and only on a fresh crossing.
             var visible = i >= cl.tail * last && i <= cl.head * last;
-            if (moving && visible && f > 0.6 && prevInk < 0.3 && flicks < FLICK_PER_FRAME &&
-                specks.length < SPECK_MAX && Math.random() < FLICK_CHANCE) {
-              flicks++;
-              var sp = 0.3 + Math.random() * 0.5;
-              specks.push({
-                x: p.x + p.px + moveX * 6 + (Math.random() - 0.5) * 8,
-                y: p.y + p.py + moveY * 6 + (Math.random() - 0.5) * 8,
-                vx: moveX * sp + (Math.random() - 0.5) * 0.2,
-                vy: moveY * sp + (Math.random() - 0.5) * 0.2,
-                r: Math.random() < 0.3 ? 2.6 + Math.random() * 1.8 : 1.1 + Math.random() * 1.3,
-                age: 0,
-                life: 1.0 + Math.random() * 1.0,
-              });
+            // Vertices are ~20 units apart, so any vertex inside the radius counts as a crossing.
+            if (moving && visible && f > 0.05 && !p.dripped && flicks < FLICK_PER_FRAME && specks.length < SPECK_MAX) {
+              p.dripped = true;
+              if (Math.random() < FLICK_CHANCE) {
+                flicks++;
+                if (Math.random() < DRIP_SHARE) {
+                  var lx = p.x + p.px;
+                  var ly = p.y + p.py;
+                  specks.push({
+                    drip: true,
+                    x: lx, y: ly, x0: lx, y0: ly,
+                    vx: 0, vy: 0.2,
+                    g: 0.03 + Math.random() * 0.04,
+                    r: 1.3 + Math.random() * 0.8,
+                    age: 0,
+                    life: 1.6 + Math.random() * 1.0,
+                  });
+                } else {
+                  var sp = 0.5 + Math.random() * 0.7;
+                  var off = 10 + Math.random() * 10;
+                  specks.push({
+                    // Start clear of the stroke: a drop on its own colour layer would vanish into the line.
+                    x: p.x + p.px + moveX * off + (Math.random() - 0.5) * 8,
+                    y: p.y + p.py + moveY * off + (Math.random() - 0.5) * 8,
+                    vx: moveX * sp + (Math.random() - 0.5) * 0.2,
+                    vy: moveY * sp + (Math.random() - 0.5) * 0.2,
+                    g: 0.025 + Math.random() * 0.02,
+                    // Larger than the halftone dots so they don't blend into the screen.
+                    r: Math.random() < 0.3 ? 4 + Math.random() * 2.5 : 2.2 + Math.random() * 1.6,
+                    age: 0,
+                    life: 1.2 + Math.random() * 1.0,
+                  });
+                }
+              }
             }
           }
           if (d2 < partR2) {
@@ -622,17 +648,25 @@
       return Math.max(0, n - 1) * 6;
     }
 
-    // A zero-length capsule (round dot) for one ink speck.
-    function buildDot(x, y, halfWidth) {
+    // A capsule from (x, y) to (x2, y2); a round dot when the end is omitted.
+    function buildDot(x, y, halfWidth, x2, y2) {
+      if (x2 === undefined) {
+        x2 = x;
+        y2 = y;
+      }
       var pad = halfWidth + 1.5 / (view.scale * view.dpr);
-      var corners = [x - pad, y - pad, x + pad, y - pad, x - pad, y + pad, x + pad, y + pad];
+      var minX = Math.min(x, x2) - pad;
+      var maxX = Math.max(x, x2) + pad;
+      var minY = Math.min(y, y2) - pad;
+      var maxY = Math.max(y, y2) + pad;
+      var corners = [minX, minY, maxX, minY, minX, maxY, maxX, maxY];
       var order = [0, 1, 2, 2, 1, 3];
       var o = 0;
       for (var k = 0; k < 6; k++) {
         var c = order[k] * 2;
         data[o++] = corners[c];
         data[o++] = corners[c + 1];
-        data[o++] = x; data[o++] = y; data[o++] = x; data[o++] = y;
+        data[o++] = x; data[o++] = y; data[o++] = x2; data[o++] = y2;
         data[o++] = 0; data[o++] = 0; data[o++] = 1; data[o++] = 1;
         data[o++] = 0; data[o++] = 0;
       }
@@ -693,8 +727,17 @@
           drawSegments(buildSegments(ECHO_WIDTH / 2, 3, -2), ECHO_WIDTH / 2);
           var specks = cl.specks || [];
           for (var s = 0; s < specks.length; s++) {
-            gl.uniform1f(sLoc.alpha, speckAlpha(specks[s]));
-            drawSegments(buildDot(specks[s].x + cl.offsetX, specks[s].y + cl.offsetY, specks[s].r), specks[s].r);
+            var sk = specks[s];
+            var sx = sk.x + cl.offsetX;
+            var sy = sk.y + cl.offsetY;
+            gl.uniform1f(sLoc.alpha, speckAlpha(sk));
+            if (sk.drip) {
+              // Thin run from the line down to a rounder drop at its end.
+              drawSegments(buildDot(sk.x0 + cl.offsetX, sk.y0 + cl.offsetY, sk.r, sx, sy), sk.r);
+              drawSegments(buildDot(sx, sy, sk.r * 1.8), sk.r * 1.8);
+            } else {
+              drawSegments(buildDot(sx, sy, sk.r), sk.r);
+            }
           }
         }
 
