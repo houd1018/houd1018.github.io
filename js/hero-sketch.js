@@ -24,8 +24,8 @@
   // The thin echo line drifts further off the main stroke where it is re-inked.
   var ECHO_SPLIT = 1.8;
   // Crossing a line while moving flicks a few ink drops off it, in the direction of travel.
-  var FLICK_CHANCE = 0.35;
-  var FLICK_PER_FRAME = 3;
+  var FLICK_CHANCE = 0.7;
+  var FLICK_PER_FRAME = 6;
   // Lines near the cursor ease aside like hair under a fingertip, then settle back; no spring.
   var PART_RADIUS_PX = 80;
   var PART_PUSH_PX = 18;
@@ -198,8 +198,8 @@
   // ------------------------------------------------------------------ ink specks
 
   // While a stroke is drawn (pen tip) or erased (trailing end), tiny ink drops spatter and fade out.
-  var SPECK_RATE = 22;
-  var SPECK_MAX = 40;
+  var SPECK_RATE = 45;
+  var SPECK_MAX = 120;
   var lastStepTime = null;
 
   function tipOf(cl, progress) {
@@ -227,16 +227,16 @@
           var side = Math.random() < 0.5 ? -1 : 1;
           var nx = (-tip.dy / len) * side;
           var ny = (tip.dx / len) * side;
-          var dist = 5 + Math.random() * 14;
-          var big = Math.random() < 0.12;
+          var dist = 6 + Math.random() * 22;
+          var big = Math.random() < 0.25;
           specks.push({
-            x: tip.x + nx * dist + (Math.random() - 0.5) * 6,
-            y: tip.y + ny * dist + (Math.random() - 0.5) * 6,
-            vx: nx * (0.05 + Math.random() * 0.12),
-            vy: ny * (0.05 + Math.random() * 0.12),
-            r: big ? 1.8 + Math.random() * 1.2 : 0.6 + Math.random() * 1.1,
+            x: tip.x + nx * dist + (Math.random() - 0.5) * 8,
+            y: tip.y + ny * dist + (Math.random() - 0.5) * 8,
+            vx: nx * (0.1 + Math.random() * 0.25),
+            vy: ny * (0.1 + Math.random() * 0.25),
+            r: big ? 2.6 + Math.random() * 1.8 : 1.1 + Math.random() * 1.3,
             age: 0,
-            life: 0.7 + Math.random() * 0.8,
+            life: 1.0 + Math.random() * 1.0,
           });
         }
         expected -= 1;
@@ -313,15 +313,15 @@
             if (moving && visible && f > 0.6 && prevInk < 0.3 && flicks < FLICK_PER_FRAME &&
                 specks.length < SPECK_MAX && Math.random() < FLICK_CHANCE) {
               flicks++;
-              var sp = 0.15 + Math.random() * 0.25;
+              var sp = 0.3 + Math.random() * 0.5;
               specks.push({
-                x: p.x + p.px + moveX * 4 + (Math.random() - 0.5) * 6,
-                y: p.y + p.py + moveY * 4 + (Math.random() - 0.5) * 6,
-                vx: moveX * sp + (Math.random() - 0.5) * 0.1,
-                vy: moveY * sp + (Math.random() - 0.5) * 0.1,
-                r: Math.random() < 0.15 ? 1.6 + Math.random() * 1.0 : 0.6 + Math.random() * 1.0,
+                x: p.x + p.px + moveX * 6 + (Math.random() - 0.5) * 8,
+                y: p.y + p.py + moveY * 6 + (Math.random() - 0.5) * 8,
+                vx: moveX * sp + (Math.random() - 0.5) * 0.2,
+                vy: moveY * sp + (Math.random() - 0.5) * 0.2,
+                r: Math.random() < 0.3 ? 2.6 + Math.random() * 1.8 : 1.1 + Math.random() * 1.3,
                 age: 0,
-                life: 0.6 + Math.random() * 0.7,
+                life: 1.0 + Math.random() * 1.0,
               });
             }
           }
@@ -693,7 +693,7 @@
           drawSegments(buildSegments(ECHO_WIDTH / 2, 3, -2), ECHO_WIDTH / 2);
           var specks = cl.specks || [];
           for (var s = 0; s < specks.length; s++) {
-            gl.uniform1f(sLoc.alpha, cl.alpha * speckAlpha(specks[s]));
+            gl.uniform1f(sLoc.alpha, speckAlpha(specks[s]));
             drawSegments(buildDot(specks[s].x + cl.offsetX, specks[s].y + cl.offsetY, specks[s].r), specks[s].r);
           }
         }
