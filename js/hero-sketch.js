@@ -330,7 +330,7 @@
     'void main() { vUv = aPos * 0.5 + 0.5; gl_Position = vec4(aPos, 0.0, 1.0); }',
   ].join('\n');
 
-  // Halftone background (faint neutral screen, CMYK rosette blooming around the cursor), then
+  // Halftone background (faint dot screen whose dots near the cursor swell and take CMYK inks), then
   // exact W3C "multiply" compositing of the colour layers, back to front, over a transparent canvas.
   var COMPOSITE_FS = [
     'precision highp float;',
@@ -342,13 +342,6 @@
     'uniform float uDpr;',
     'uniform vec3 uMouse;',
     'varying vec2 vUv;',
-    'float dots(vec2 p, float ang, float cell, float r) {',
-    '  float c = cos(ang); float s = sin(ang);',
-    '  vec2 q = vec2(c * p.x - s * p.y, s * p.x + c * p.y) / cell;',
-    '  float d = length(fract(q) - 0.5) * cell;',
-    '  return 1.0 - smoothstep(r - 0.7, r + 0.7, d);',
-    '}',
-    'vec4 over(vec4 acc, vec4 s) { return s + acc * (1.0 - s.a); }',
     'vec4 blend(vec4 acc, vec4 s) {',
     '  if (s.a <= 0.0) return acc;',
     '  vec3 cs = s.rgb / s.a;',
@@ -359,19 +352,18 @@
     'void main() {',
     '  vec2 p = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y) / uDpr;',
     '  vec2 dm = p - uMouse.xy;',
-    '  float near = uMouse.z * exp(-dot(dm, dm) / (2.0 * 110.0 * 110.0));',
+    '  float near = uMouse.z * exp(-dot(dm, dm) / (2.0 * 80.0 * 80.0));',
     '  float cell = 16.0;',
-    '  float n = dots(p, 0.785, cell, 1.0 + 1.2 * near) * 0.07;',
-    '  vec4 acc = vec4(vec3(n), n);',
-    '  if (near > 0.05) {',
-    '    float r = (near - 0.05) * 3.8;',
-    '    float c = dots(p, 0.262, cell, r) * 0.6;',
-    '    float m = dots(p, 1.309, cell, r) * 0.6;',
-    '    float y = dots(p, 0.0, cell, r * 0.9) * 0.6;',
-    '    acc = over(acc, vec4(vec3(1.0, 0.949, 0.0) * y, y));',
-    '    acc = over(acc, vec4(vec3(0.925, 0.0, 0.549) * m, m));',
-    '    acc = over(acc, vec4(vec3(0.0, 0.682, 0.937) * c, c));',
-    '  }',
+    // One screen only: dots near the cursor grow a little and take one ink each (picked per cell).
+    '  vec2 q = vec2(0.7071 * (p.x - p.y), 0.7071 * (p.x + p.y)) / cell;',
+    '  float d = length(fract(q) - 0.5) * cell;',
+    '  float r = 1.0 + 2.2 * near;',
+    '  float dotMask = 1.0 - smoothstep(r - 0.7, r + 0.7, d);',
+    '  float h = fract(sin(dot(floor(q), vec2(12.9898, 78.233))) * 43758.5453);',
+    '  vec3 ink = h < 0.34 ? vec3(0.0, 0.682, 0.937) : (h < 0.67 ? vec3(0.925, 0.0, 0.549) : vec3(1.0, 0.949, 0.0));',
+    '  vec3 col = mix(vec3(1.0), ink, smoothstep(0.1, 0.5, near));',
+    '  float a = dotMask * mix(0.07, 0.55, near);',
+    '  vec4 acc = vec4(col * a, a);',
     '  acc = blend(acc, texture2D(uL0, vUv));',
     '  acc = blend(acc, texture2D(uL1, vUv));',
     '  acc = blend(acc, texture2D(uL2, vUv));',
