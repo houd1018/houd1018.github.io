@@ -81,7 +81,7 @@ cleaned_media/          local media mirror (git-ignored, synced to R2)
 
 ## 4. Interaction guidelines
 
-- **Intro**: on first view each color's stroke "sprawls out" along its path (eased, staggered cyan → magenta → yellow → black) while the hero text fades up. Double-click the hero (or 30 s idle) erases and re-sketches it.
+- **Intro**: on first view each color's stroke "sprawls out" along its path (eased, staggered cyan → magenta → yellow → black) while the hero text fades up; tiny ink specks spatter around the pen tip while drawing and fade out. Double-click the hero (or 30 s idle) erases and re-sketches it.
 - **Rendering**: `js/hero-sketch.js` uses raw WebGL (no library): one layer per color with tube shading, depth tint from each loop's z, soft density variation along the stroke (no speckles), then an exact W3C `multiply` composite shader. Canvas 2D fallback (also via `?hero=2d`). Constant stroke width.
 - **Calm and refined**: strokes never jitter at high frequency; they only drift with a gentle, staggered vertical "breathing" (low-frequency sine, per-stroke phase/amplitude, a few pixels).
 - **3D parallax**: on mouse move, layers offset by depth with eased interpolation (no hard snapping to the cursor).

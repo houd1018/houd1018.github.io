@@ -183,8 +183,71 @@
     }
   }
 
+  // ------------------------------------------------------------------ ink specks
+
+  // While a stroke is being drawn, tiny ink drops spatter around the pen tip and fade out.
+  var SPECK_RATE = 22;
+  var SPECK_MAX = 40;
+  var lastStepTime = null;
+
+  function tipOf(cl) {
+    var pts = cl.pts;
+    var f = cl.head * (pts.length - 1);
+    var i = Math.min(Math.floor(f), pts.length - 2);
+    var t = f - i;
+    var a = pts[i];
+    var b = pts[i + 1];
+    return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t, dx: b.x - a.x, dy: b.y - a.y };
+  }
+
+  function stepSpecks(cl, dt) {
+    var specks = cl.specks || (cl.specks = []);
+    if (anim.mode === 'drawing' && cl.head > 0 && cl.head < 1 && specks.length < SPECK_MAX) {
+      var expected = SPECK_RATE * dt;
+      while (expected > 0) {
+        if (Math.random() < Math.min(1, expected)) {
+          var tip = tipOf(cl);
+          var len = Math.sqrt(tip.dx * tip.dx + tip.dy * tip.dy) || 1;
+          // Mostly flung sideways from the direction of travel.
+          var side = Math.random() < 0.5 ? -1 : 1;
+          var nx = (-tip.dy / len) * side;
+          var ny = (tip.dx / len) * side;
+          var dist = 5 + Math.random() * 14;
+          var big = Math.random() < 0.12;
+          specks.push({
+            x: tip.x + nx * dist + (Math.random() - 0.5) * 6,
+            y: tip.y + ny * dist + (Math.random() - 0.5) * 6,
+            vx: nx * (0.05 + Math.random() * 0.12),
+            vy: ny * (0.05 + Math.random() * 0.12),
+            r: big ? 1.8 + Math.random() * 1.2 : 0.6 + Math.random() * 1.1,
+            age: 0,
+            life: 0.7 + Math.random() * 0.8,
+          });
+        }
+        expected -= 1;
+      }
+    }
+    for (var i = specks.length - 1; i >= 0; i--) {
+      var s = specks[i];
+      s.age += dt;
+      s.x += s.vx;
+      s.y += s.vy;
+      s.vx *= 0.92;
+      s.vy *= 0.92;
+      if (s.age >= s.life) specks.splice(i, 1);
+    }
+  }
+
+  function speckAlpha(s) {
+    var fadeIn = Math.min(1, s.age / 0.08);
+    return fadeIn * Math.pow(1 - s.age / s.life, 1.5);
+  }
+
   function step(time) {
     stepAnimation(time);
+    var dt = lastStepTime === null ? 0 : Math.min(0.1, (time - lastStepTime) / 1000);
+    lastStepTime = time;
+    for (var sc = 0; sc < CLUSTERS.length; sc++) stepSpecks(CLUSTERS[sc], dt);
 
     smooth.x += (target.x - smooth.x) * 0.06;
     smooth.y += (target.y - smooth.y) * 0.06;
@@ -490,6 +553,22 @@
       return Math.max(0, n - 1) * 6;
     }
 
+    // A zero-length capsule (round dot) for one ink speck.
+    function buildDot(x, y, halfWidth) {
+      var pad = halfWidth + 1.5 / (view.scale * view.dpr);
+      var corners = [x - pad, y - pad, x + pad, y - pad, x - pad, y + pad, x + pad, y + pad];
+      var order = [0, 1, 2, 2, 1, 3];
+      var o = 0;
+      for (var k = 0; k < 6; k++) {
+        var c = order[k] * 2;
+        data[o++] = corners[c];
+        data[o++] = corners[c + 1];
+        data[o++] = x; data[o++] = y; data[o++] = x; data[o++] = y;
+        data[o++] = 0; data[o++] = 0; data[o++] = 1; data[o++] = 1;
+      }
+      return 6;
+    }
+
     function drawSegments(count, halfWidth) {
       if (!count) return;
       gl.uniform1f(sLoc.half, halfWidth);
@@ -539,6 +618,11 @@
           // Thin offset echo line gives the doubled crayon edge.
           gl.uniform1f(sLoc.alpha, cl.alpha * 0.45);
           drawSegments(buildSegments(ECHO_WIDTH / 2, 3, -2), ECHO_WIDTH / 2);
+          var specks = cl.specks || [];
+          for (var s = 0; s < specks.length; s++) {
+            gl.uniform1f(sLoc.alpha, cl.alpha * speckAlpha(specks[s]));
+            drawSegments(buildDot(specks[s].x + cl.offsetX, specks[s].y + cl.offsetY, specks[s].r), specks[s].r);
+          }
         }
 
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -602,6 +686,15 @@
           lctx.lineWidth = STROKE_WIDTH;
           tracePath(lctx, 0, 0);
           lctx.stroke();
+          var specks = cl.specks || [];
+          lctx.fillStyle = cl.color;
+          for (var s = 0; s < specks.length; s++) {
+            lctx.globalAlpha = speckAlpha(specks[s]);
+            lctx.beginPath();
+            lctx.arc(specks[s].x + cl.offsetX, specks[s].y + cl.offsetY, specks[s].r, 0, Math.PI * 2);
+            lctx.fill();
+          }
+          lctx.globalAlpha = 1;
 
           ctx.setTransform(1, 0, 0, 1, 0, 0);
           ctx.globalCompositeOperation = 'multiply';
