@@ -27,7 +27,7 @@
   var FLICK_CHANCE = 0.85;
   var FLICK_PER_FRAME = 6;
   // Share of crossings that leave a drip running down from the line instead of a flicked drop.
-  var DRIP_SHARE = 0.2;
+  var DRIP_SHARE = 0.08;
   var DRIP_LEN = 34;
   // Lines near the cursor ease aside like hair under a fingertip, then settle back; no spring.
   var PART_RADIUS_PX = 80;
@@ -336,11 +336,11 @@
                     drip: true,
                     pt: p,
                     x: lx, y: ly, y0: ly,
-                    len: DRIP_LEN * (0.45 + Math.random() * 0.55),
-                    k: 1.2 + Math.random() * 0.8,
+                    len: DRIP_LEN * (0.6 + Math.random() * 0.4),
+                    k: 0.5 + Math.random() * 0.4,
                     r: 1.6 + Math.random() * 0.9,
                     age: 0,
-                    life: 2.2 + Math.random() * 1.0,
+                    life: 3.5 + Math.random() * 1.0,
                   });
                 } else {
                   var sp = 0.5 + Math.random() * 0.7;
@@ -686,14 +686,14 @@
       return 6;
     }
 
-    // Drip radius along its length (u = 0 at the line, 1 at the bulb centre), in units of the neck radius.
-    function dripProfile(u) {
-      return 1 + 0.9 * Math.exp(-u / 0.1) + 1.4 * Math.exp(-((u - 1) * (u - 1)) / 0.03);
+    // Drip radius along its length (u = 0 at the line, 1 at the tip), in units of the top radius.
+    // Thin at the line, steadily thicker towards a rounded tip that fattens as the drip runs (g = 0..1).
+    function dripProfile(u, g) {
+      return 1 + (1.0 + 1.0 * g) * Math.pow(u, 2.2);
     }
 
-    // A tapered run hanging from the line: wide where it leaves the stroke, a thin neck, then a teardrop bulb.
     // The radius is passed through aInk and widened by uSwell = 1, with uInkMix = 0 so it doesn't affect colour.
-    function buildDrip(x, y0, y1, neck) {
+    function buildDrip(x, y0, y1, neck, g) {
       var n = 14;
       var aaPad = 1.5 / (view.scale * view.dpr);
       var o = 0;
@@ -702,8 +702,8 @@
         var ub = (i + 1) / n;
         var ya = y0 + (y1 - y0) * ua;
         var yb = y0 + (y1 - y0) * ub;
-        var wa = dripProfile(ua) - 1;
-        var wb = dripProfile(ub) - 1;
+        var wa = dripProfile(ua, g) - 1;
+        var wb = dripProfile(ub, g) - 1;
         var pad = neck * (1 + Math.max(wa, wb)) + aaPad;
         var corners = [x - pad, ya - pad, x + pad, ya - pad, x - pad, yb + pad, x + pad, yb + pad];
         var order = [0, 1, 2, 2, 1, 3];
@@ -779,8 +779,9 @@
             var sy = sk.y + cl.offsetY;
             gl.uniform1f(sLoc.alpha, speckAlpha(sk));
             if (sk.drip) {
-              var neck = sk.r * 0.6;
-              drawSegments(buildDrip(sx, sk.y0 + cl.offsetY, sy, neck), neck, 1, 0);
+              var neck = sk.r * 0.5;
+              var grown = sk.len > 0 ? (sk.y - sk.y0) / sk.len : 1;
+              drawSegments(buildDrip(sx, sk.y0 + cl.offsetY, sy, neck, grown), neck, 1, 0);
             } else {
               drawSegments(buildDot(sx, sy, sk.r), sk.r);
             }
