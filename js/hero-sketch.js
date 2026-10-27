@@ -18,8 +18,15 @@
 
   var DESIGN_H = 680;
   // Where the cursor passes over a line, that part darkens as if traced again, then fades back.
-  var INK_RADIUS_PX = 26;
-  var INK_FADE = 1.2;
+  var INK_RADIUS_PX = 30;
+  var INK_FADE = 0.7;
+  // Re-inked parts swell (pen pressure) and shift to a deeper tone of their colour.
+  var INK_SWELL = 0.9;
+  var INK_DEEPEN = 0.55;
+  // Lines near the cursor ease aside like hair under a fingertip, then settle back; no spring.
+  var PART_RADIUS_PX = 80;
+  var PART_PUSH_PX = 18;
+  var PART_EASE = 5;
   var STIFFNESS = 0.09;
   var DAMPING = 0.82;
   var STROKE_WIDTH = 7;
@@ -61,10 +68,11 @@
       var x = c.cx + lx * cosT - ly * sinT;
       var y = c.cy + lx * sinT + ly * cosT;
       // Each loop is treated as a helix: z > 0 is the half nearer the viewer.
-      pts.push({ x: x, y: y, ox: x, oy: y, vx: 0, vy: 0, z: Math.sin(angle), ink: 0 });
+      pts.push({ x: x, y: y, ox: x, oy: y, vx: 0, vy: 0, z: Math.sin(angle), ink: 0, px: 0, py: 0 });
     }
     c.pts = pts;
     c.rgb = hexToRgb(c.color);
+    c.deepColor = 'rgb(' + c.rgb.map(function (v) { return Math.round(v * 255 * (1 - INK_DEEPEN)); }).join(',') + ')';
     c.index = index;
     c.offsetX = 0;
     c.offsetY = 0;
@@ -254,6 +262,10 @@
     var radius = INK_RADIUS_PX / view.scale;
     var r2 = radius * radius;
     var inkDecay = Math.exp(-dt * INK_FADE);
+    var partR = PART_RADIUS_PX / view.scale;
+    var partR2 = partR * partR;
+    var partPush = PART_PUSH_PX / view.scale;
+    var partK = 1 - Math.exp(-dt * PART_EASE);
     var t = time * 0.001;
 
     for (var c = 0; c < CLUSTERS.length; c++) {
@@ -269,6 +281,8 @@
       for (var i = 0; i < pts.length; i++) {
         var p = pts[i];
         p.ink *= inkDecay;
+        var tx = 0;
+        var ty = 0;
         if (pointer.active) {
           var dx = p.x - mx;
           var dy = p.y - my;
@@ -278,7 +292,16 @@
             f = f * f * (3 - 2 * f);
             if (f > p.ink) p.ink = f;
           }
+          if (d2 < partR2) {
+            var d = Math.sqrt(d2) || 1e-3;
+            var q = 1 - d2 / partR2;
+            var push = partPush * q * q;
+            tx = (dx / d) * push;
+            ty = (dy / d) * push;
+          }
         }
+        p.px += (tx - p.px) * partK;
+        p.py += (ty - p.py) * partK;
         // A slow wave travelling along the stroke; neighbours move together, so lines stay smooth.
         var restY = p.oy + Math.sin(t * 0.9 + cl.phase + i * 0.03) * 1.6;
         p.vx += (p.ox - p.x) * STIFFNESS;
@@ -312,8 +335,8 @@
     var b = pts[i + 1];
     var z = a.z + (b.z - a.z) * t;
     var k = vis.n++;
-    vis.x[k] = a.x + (b.x - a.x) * t + cl.offsetX;
-    vis.y[k] = a.y + (b.y - a.y) * t + cl.offsetY;
+    vis.x[k] = a.x + a.px + (b.x + b.px - a.x - a.px) * t + cl.offsetX;
+    vis.y[k] = a.y + a.py + (b.y + b.py - a.y - a.py) * t + cl.offsetY;
     vis.z[k] = z;
     vis.ink[k] = a.ink + (b.ink - a.ink) * t;
     vis.s[k] = f;
@@ -362,6 +385,7 @@
     'uniform float uAlpha;',
     'uniform float uSeed;',
     'uniform float uHalf;',
+    'uniform float uSwell;',
     'uniform float uAA;',
     'varying vec2 vP;',
     'varying vec4 vSeg;',
@@ -376,9 +400,11 @@
     '  vec2 a = vSeg.xy; vec2 ab = vSeg.zw - a;',
     '  float t = clamp(dot(vP - a, ab) / max(dot(ab, ab), 1e-6), 0.0, 1.0);',
     '  float d = length(vP - a - ab * t);',
-    '  if (d > uHalf + uAA) discard;',
-    '  float v = d / uHalf;',
-    '  float edge = 1.0 - smoothstep(uHalf - uAA, uHalf + uAA, d);',
+    '  float ink = mix(vInk.x, vInk.y, t);',
+    '  float h = uHalf * (1.0 + uSwell * ink);',
+    '  if (d > h + uAA) discard;',
+    '  float v = d / h;',
+    '  float edge = 1.0 - smoothstep(h - uAA, h + uAA, d);',
     '  float tube = sqrt(max(0.0, 1.0 - v * v));',
     '  float along = mix(vMeta.x, vMeta.y, t);',
     '  float depth = 0.5 + 0.5 * mix(vMeta.z, vMeta.w, t);',
@@ -386,10 +412,9 @@
     '  float grain = mix(0.85, 1.0, noise(vec2(along * 0.9, uSeed)));',
     '  float alpha = uAlpha * edge * grain * mix(0.75, 1.0, depth);',
     '  vec3 col = min(uColor * mix(0.85, 1.1, tube) * mix(0.85, 1.0, depth), 1.0);',
-    // Re-inked parts: denser and a touch darker, like a second pass of the crayon.
-    '  float ink = mix(vInk.x, vInk.y, t);',
-    '  alpha = mix(alpha, min(1.0, alpha + 0.55 * edge), ink);',
-    '  col *= 1.0 - 0.28 * ink;',
+    // Re-inked parts: fully opaque and a deeper tone, like a second, harder pass of the crayon.
+    '  alpha = mix(alpha, edge, ink);',
+    '  col *= 1.0 - ' + INK_DEEPEN.toFixed(2) + ' * ink;',
     '  gl_FragColor = vec4(col * alpha, alpha);',
     '}',
   ].join('\n');
@@ -484,6 +509,7 @@
       alpha: gl.getUniformLocation(strokeProg, 'uAlpha'),
       seed: gl.getUniformLocation(strokeProg, 'uSeed'),
       half: gl.getUniformLocation(strokeProg, 'uHalf'),
+      swell: gl.getUniformLocation(strokeProg, 'uSwell'),
       aa: gl.getUniformLocation(strokeProg, 'uAA'),
     };
     var cPos = gl.getAttribLocation(compProg, 'aPos');
@@ -523,8 +549,9 @@
     function buildSegments(halfWidth, shiftX, shiftY) {
       var n = vis.n;
       var o = 0;
-      var pad = halfWidth + 1.5 / (view.scale * view.dpr);
+      var aaPad = 1.5 / (view.scale * view.dpr);
       for (var i = 0; i < n - 1; i++) {
+        var pad = halfWidth * (1 + INK_SWELL * Math.max(vis.ink[i], vis.ink[i + 1])) + aaPad;
         var ax = vis.x[i] + shiftX;
         var ay = vis.y[i] + shiftY;
         var bx = vis.x[i + 1] + shiftX;
@@ -582,6 +609,7 @@
     function drawSegments(count, halfWidth) {
       if (!count) return;
       gl.uniform1f(sLoc.half, halfWidth);
+      gl.uniform1f(sLoc.swell, INK_SWELL);
       gl.uniform1f(sLoc.aa, 0.75 / (view.scale * view.dpr));
       gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
       gl.bufferSubData(gl.ARRAY_BUFFER, 0, data.subarray(0, count * FLOATS));
@@ -716,12 +744,12 @@
           // Re-ink pass: darken the segments the cursor recently traced over.
           ctx.setTransform(m[0], m[1], m[2], m[3], m[4], m[5]);
           ctx.lineCap = 'round';
-          ctx.strokeStyle = cl.color;
-          ctx.lineWidth = STROKE_WIDTH;
+          ctx.strokeStyle = cl.deepColor;
           for (var k = 1; k < vis.n; k++) {
             var ink = (vis.ink[k - 1] + vis.ink[k]) / 2;
             if (ink < 0.02) continue;
-            ctx.globalAlpha = 0.65 * ink;
+            ctx.globalAlpha = ink;
+            ctx.lineWidth = STROKE_WIDTH * (1 + INK_SWELL * ink);
             ctx.beginPath();
             ctx.moveTo(vis.x[k - 1], vis.y[k - 1]);
             ctx.lineTo(vis.x[k], vis.y[k]);
