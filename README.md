@@ -10,7 +10,7 @@ A pure static site (HTML / CSS / vanilla JS, no build step). Code lives in this 
 | Path | What |
 |---|---|
 | `index.html` | Home: CMYK hero, About, project grid, latest posts, contact |
-| `projects/` | `index.html` (grid) + one `<slug>.html` per project |
+| `projects/` | `index.html` (grid), `content/<slug>.md` (project content), `<slug>.html` (generated shells) |
 | `blog/` | `index.html` (list), `post.html?slug=…` (renderer), `posts/<slug>.md` (post bodies) |
 | `data/projects.js` | Project index — order here = order in the grid |
 | `data/blog.js` | Blog index — newest first |
@@ -27,7 +27,7 @@ A pure static site (HTML / CSS / vanilla JS, no build step). Code lives in this 
 python -m http.server 8000
 ```
 
-Open http://localhost:8000. Media loads from `cleaned_media/`; add `?media=remote` to any URL to load it from R2 instead. Blog posts need the server (opening files directly with `file://` won't load them).
+Open http://localhost:8000. Media loads from `cleaned_media/`; add `?media=remote` to any URL to load it from R2 instead. Blog posts and project pages need the server (opening files directly with `file://` won't load them).
 
 ## Media rules (important)
 
@@ -35,7 +35,7 @@ Open http://localhost:8000. Media loads from `cleaned_media/`; add `?media=remot
 - Paths are relative to the media root: `projects/<slug>/<file>` for projects, `blog/<slug>/<file>` for posts.
 - Reference media only as:
   - HTML: `<img data-media-src="projects/my-slug/demo.gif" alt="…">`, `<video data-media-src="…">`
-  - Markdown: `![alt](media:blog/my-slug/demo.gif)` (wrap in `<…>` if the name has spaces)
+  - Markdown (blog posts, project content): `![alt](media:blog/my-slug/demo.gif)` (wrap in `<…>` if the name has spaces)
 - Upload new files:
   ```powershell
   rclone copy cleaned_media r2:houd1018-media --exclude _manifest.json --progress
@@ -61,20 +61,43 @@ Open http://localhost:8000. Media loads from `cleaned_media/`; add `?media=remot
    },
    ```
    Optional fields: `preview` (hover GIF/mp4), `video`, `url` (external link, no page needed), `listed: false` (page exists but hidden from the grid).
-3. Copy an existing page (e.g. [projects/sarapist.html](projects/sarapist.html)) to `projects/my-shader.html` and replace the title, description, `data-project`, category, subtitle and the content inside `<main>`. Building blocks:
-   ```html
-   <div class="media-video"><iframe src="https://www.youtube-nocookie.com/embed/VIDEO_ID" title="Demo" loading="lazy" allowfullscreen></iframe></div>
-   <p>Text…</p>
-   <h2>Section</h2>
-   <figure class="media-figure"><img data-media-src="projects/my-shader/a.gif" alt="…" loading="lazy"></figure>
-   <div class="gif-grid gif-grid--2">
-     <figure><img data-media-src="projects/my-shader/b.gif" alt="…" loading="lazy"></figure>
-     <figure><img data-media-src="projects/my-shader/c.gif" alt="…" loading="lazy"></figure>
-   </div>
-   <pre><code class="language-hlsl">half4 frag (v2f i) : SV_Target { … }</code></pre>
+3. Write the page content in `projects/content/my-shader.md` (Markdown plus `:::` layout blocks; see [projects/content/sarapist.md](projects/content/sarapist.md) for a full example):
+   ```md
+   :::hero
+   ![Demo](youtube:VIDEO_ID)
+   :::
+
+   :::overview
+   What the project is, in a sentence or two.
+
+   - What I built
+   - Another highlight
+   :::
+
+   :::meta
+   Role: Technical Artist
+   Tools: Unity, URP, HLSL
+   Links: [Breakdown](../blog/post.html?slug=my-notes)
+   :::
+
+   ## Features
+
+   :::row
+   ### Water shader
+   How it works, in a few lines.
+
+   ![Water](media:projects/my-shader/water.gif)
+   :::
+
+   :::gallery 3
+   ![A](media:projects/my-shader/a.gif "Caption A")
+   ![B](media:projects/my-shader/b.gif "Caption B")
+   ![C](media:projects/my-shader/c.mp4#loop "Looping clip")
+   :::
    ```
-   Images open in a lightbox automatically.
-4. Preview at `http://localhost:8000/projects/my-shader.html`.
+   Rows put text beside media and alternate sides; `:::tabs` with `:::tab Label` blocks and `:::cards` (link cards to sub-projects) are also available. Full reference: [content rules](.github/instructions/content-pages.instructions.md).
+4. Generate the page shell: `python scripts/build_project_pages.py --only my-shader` (re-run it whenever the title, subtitle or category changes).
+5. Preview at `http://localhost:8000/projects/my-shader.html`.
 
 ## Add a blog post
 

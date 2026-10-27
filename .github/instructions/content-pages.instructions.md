@@ -50,46 +50,67 @@ window.BLOG_POSTS = [
 - `data/blog.js` stays sorted by `date`, newest first. Do not reformat or reorder fields of other entries.
 - Never store full media URLs in these files — only media library paths.
 
-## 2. Project detail page `projects/<slug>.html`
+## 2. Project detail pages
 
-Page skeleton (keep it identical across pages for easy bulk maintenance; copy an existing page such as `projects/sarapist.html` for the full header/footer markup):
+Each project has two files:
 
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{Title} | Dazhou Hou</title>
-  <meta name="description" content="{subtitle or summary}" />
-  <script src="../config.js"></script>
-  <link rel="icon" href="../assets/img/favicons/favicon.ico" />
-  <link rel="stylesheet" href="../css/base.css" />
-  <link rel="stylesheet" href="../css/content.css" />
-</head>
-<body class="page-content" data-project="{slug}">
-  <a class="skip-link" href="#main">Skip to content</a>
-  <header class="site-header"><!-- brand + nav: Home | About Me | Projects | Blog | Contact --></header>
-  <section class="page-hero content-header" id="hero" data-sketch-mode="static" data-sketch-fit="cover">
-    <canvas id="hero-canvas" aria-hidden="true"></canvas>
-    <p class="content-category">{Category Label}</p>
-    <h1>{Title}</h1>
-    <p class="content-subtitle">{subtitle}</p>
-  </section>
-  <main id="main" class="content prose">
-    <!-- content blocks, see below -->
-    <p class="back-link"><a href="index.html">&larr; All projects</a></p>
-  </main>
-  <footer class="site-footer"></footer>
-  <script src="../data/projects.js"></script>
-  <script src="../js/lightbox.js"></script>
-  <script src="../js/content.js"></script>
-  <script src="../js/hero-sketch.js"></script>
-</body>
-</html>
+- `projects/content/<slug>.md` — **the content you edit**: Markdown plus `:::` layout blocks.
+- `projects/<slug>.html` — a generated shell (header, sketch band with category/title/subtitle from `data/projects.js`, empty `<article id="project-body">`). Never hand-edit it; run `python scripts/build_project_pages.py [--only <slug>]` after adding a project or changing its title/subtitle/category.
+
+`js/project-page.js` fetches the Markdown (needs HTTP, like blog posts), renders it with `marked`, sanitizes with DOMPurify, then lays out the blocks.
+
+### Page structure (in this order)
+
+```md
+:::hero
+![Gameplay trailer](youtube:VIDEO_ID)
+:::
+
+:::overview
+One or two short paragraphs: what the project is.
+
+- Highlight of what I did (bullets here render as highlight dots)
+- Another highlight
+:::
+
+:::meta
+Context: CMU ETC · Building Virtual Worlds Round 1 · Team 10
+Role: Technical Artist
+Tools: Unity, C#, Shader Graph
+Platform: Quest 2 (VR)
+Links: [Play on itch.io](https://…) · [Breakdown](../blog/post.html?slug=…)
+:::
+
+## Section heading
+
+:::row
+### Feature name
+Text explaining the feature.
+
+![Feature result](media:projects/<slug>/feature.gif)
+:::
 ```
 
-## 3. Content block components
+- `hero` (optional): one media item shown full width under the title band.
+- `overview` + `meta`: rendered side by side (meta is a `Key: value` list; values allow inline Markdown links). Use only facts the user gave; omit unknown keys.
+- `row [reverse|normal]`: text beside media; media items (images, videos, galleries) go to the media column, everything else to the text column. Rows alternate sides automatically; several media items stack (images in two columns).
+- `gallery N` (N = 1–4): grid of media items; the title in quotes becomes the caption.
+- `cards`: list items `- [Title](slug.html) Subtitle ![](media:cover.jpg)` → link cards to sub-projects.
+- `tabs` containing `:::tab Label` blocks (each closed with `:::`): tab panel ids derive from the label (`#pathtracer` deep links). Headings inside tabs start at `###`/`####`.
+- Plain Markdown (paragraphs, `##` headings, lists, code fences, single media) can go anywhere between blocks. Every block opener needs its own `:::` closer.
+
+### Media syntax (projects)
+
+| Markdown | Renders as |
+|---|---|
+| `![alt](media:path/x.gif "Caption")` | figure with lightbox image and optional caption |
+| `![alt](media:path/x.mp4)` | 16:9 video player with controls (`#9x16` / `#4x3` suffix changes aspect) |
+| `![alt](media:path/x.mp4#loop)` | silent autoplay loop, like a GIF |
+| `![title](youtube:ID)`, `bilibili:BV…`, `vimeo:ID` | embedded player (youtube-nocookie) |
+
+Raw HTML components from section 3 still work inside the Markdown (sanitized; `data-media-*` attributes are hydrated).
+
+## 3. HTML components (blog posts, raw HTML in Markdown)
 
 ### Responsive video container (16:9)
 

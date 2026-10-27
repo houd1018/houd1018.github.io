@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Migrate WordPress project pages into static ``projects/<slug>.html`` pages + ``data/projects.js``.
+"""Migrate WordPress project pages into ``projects/content/<slug>.md`` + page shells + ``data/projects.js``.
 
 * Project grid (titles, categories, subtitles, covers, order) comes from the Essential Addons
   "filterable gallery" widget on the WordPress home page (``_elementor_data``).
@@ -8,6 +8,8 @@
 * Page bodies come from ``content:encoded`` (Elementor's rendered HTML) and are rebuilt with a
   strict allowlist: media → ``data-media-*`` paths (mapped to masters via the cleaned_media
   manifest), bare video URLs → ``.media-video``, image runs → ``gif-grid``, internal links → new URLs.
+  The body is written as raw HTML inside the Markdown file; restructure it with ::: blocks by hand.
+  Existing content files are hand-edited, so they are only overwritten with ``--force``.
 
 Examples
 --------
@@ -31,6 +33,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import clean_uploads  # noqa: E402
 import migrate_blog_posts  # noqa: E402
+from build_project_pages import render_shell  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_XML = REPO_ROOT / "portfolio_Legacy" / "dazhouhou.WordPress.2026-10-26.xml"
@@ -454,65 +457,6 @@ def postprocess(body: str) -> str:
     return "\n".join(lines)
 
 
-def render_page(project: Dict, body: str, related_url: Optional[str]) -> str:
-    esc = lambda s: html.escape(s or "", quote=True)
-    label = CATEGORY_LABELS.get(project["category"], project["category"])
-    subtitle = f'\n      <p class="content-subtitle">{esc(project.get("subtitle"))}</p>' if project.get("subtitle") else ""
-    external = (
-        f'\n    <p><a class="btn" href="{esc(related_url)}">Visit project site</a></p>' if related_url else ""
-    )
-    indented = "\n".join("    " + line for line in body.split("\n"))
-    return f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{esc(project["title"])} | Dazhou Hou</title>
-  <meta name="description" content="{esc(project.get("summary") or project.get("subtitle") or project["title"])}" />
-  <script src="../config.js"></script>
-  <link rel="icon" href="../assets/img/favicons/favicon.ico" />
-  <link rel="stylesheet" href="../css/base.css" />
-  <link rel="stylesheet" href="../css/content.css" />
-</head>
-<body class="page-content" data-project="{esc(project["slug"])}">
-  <a class="skip-link" href="#main">Skip to content</a>
-
-  <header class="site-header">
-    <a class="site-brand" href="../index.html">Dazhou Hou</a>
-    <nav class="site-nav" aria-label="Primary">
-      <a href="../index.html">Home</a>
-      <a href="../index.html#about">About Me</a>
-      <a href="index.html" aria-current="page">Projects</a>
-      <a href="../blog/index.html">Blog</a>
-      <a href="../index.html#contact">Contact</a>
-    </nav>
-  </header>
-
-  <section class="page-hero content-header" id="hero" data-sketch-mode="static" data-sketch-fit="cover">
-    <canvas id="hero-canvas" aria-hidden="true"></canvas>
-    <p class="content-category">{esc(label)}</p>
-    <h1>{esc(project["title"])}</h1>{subtitle}
-  </section>
-
-  <main id="main" class="content prose">
-{indented}{external}
-    <p class="back-link"><a href="index.html">&larr; All projects</a></p>
-  </main>
-
-  <footer class="site-footer">
-    &copy; Dazhou Hou &middot;
-    <a href="https://github.com/houd1018" target="_blank" rel="noopener noreferrer">GitHub</a>
-  </footer>
-
-  <script src="../data/projects.js"></script>
-  <script src="../js/lightbox.js"></script>
-  <script src="../js/content.js"></script>
-  <script src="../js/hero-sketch.js"></script>
-</body>
-</html>
-"""
-
-
 def find_gallery(items: List[ET.Element]) -> List[Dict]:
     for it in items:
         for meta in it.findall("wp:postmeta", NS):
@@ -692,7 +636,7 @@ def build_accordion_cards(
 
 def main(argv: Optional[List[str]] = None) -> int:
     ensure_utf8_stdout()
-    ap = argparse.ArgumentParser(description="WordPress XML -> projects/<slug>.html + data/projects.js")
+    ap = argparse.ArgumentParser(description="WordPress XML -> projects/content/<slug>.md + shells + data/projects.js")
     ap.add_argument("--xml", type=Path, default=DEFAULT_XML)
     ap.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     ap.add_argument("--out-dir", type=Path, default=DEFAULT_OUT)
@@ -801,17 +745,18 @@ def main(argv: Optional[List[str]] = None) -> int:
                 project["cover"] = first.group(1)
 
         report["pages"][slug] = dict(stats, listed=slug in listed)  # type: ignore[index]
-        target = args.out_dir / f"{slug}.html"
+        target = args.out_dir / "content" / f"{slug}.md"
         exists = target.exists()
         status = "skip  " if exists and not args.force else "write "
         if args.only and args.only != slug:
             continue
-        print(f"{status} projects/{slug}.html  [{project['category']}{'' if slug in listed else ', unlisted'}]  "
+        print(f"{status} projects/content/{slug}.md  [{project['category']}{'' if slug in listed else ', unlisted'}]  "
               f"img={stats['images']} video={stats['videos']} embed={stats['embeds']}"
               + (f" tabs={n_tabs}" if n_tabs else "") + (f" cards={n_cards}" if n_cards else ""))
         if not args.dry_run and (args.force or not exists):
             target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text(render_page(project, body, None), encoding="utf-8", newline="\n")
+            target.write_text(body + "\n", encoding="utf-8", newline="\n")
+            (args.out_dir / f"{slug}.html").write_text(render_shell(project), encoding="utf-8", newline="\n")
             written += 1
 
     for p in projects:
