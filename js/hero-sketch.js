@@ -353,7 +353,7 @@
     '  vec2 p = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y) / uDpr;',
     '  vec2 dm = p - uMouse.xy;',
     '  float near = uMouse.z * exp(-dot(dm, dm) / (2.0 * 80.0 * 80.0));',
-    '  float cell = 16.0;',
+    '  float cell = 22.0;',
     // One screen only: dots near the cursor grow a little and take one ink each (picked per cell).
     '  vec2 q = vec2(0.7071 * (p.x - p.y), 0.7071 * (p.x + p.y)) / cell;',
     '  float d = length(fract(q) - 0.5) * cell;',
