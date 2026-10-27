@@ -1,6 +1,6 @@
 /* Home hero: CMYK crayon scribbles that sprawl out on load and re-sketch on double-click or after idling.
- * WebGL renderer (tube shading, depth tint, crayon grain, exact multiply overprint) with a Canvas 2D fallback.
- * Calm breathing, per-vertex 3D parallax and local string pluck are shared by both renderers. */
+ * WebGL renderer (tube shading, depth tint, soft crayon density, exact multiply overprint) with a Canvas 2D fallback.
+ * Calm breathing, eased 3D parallax and local string pluck are shared by both renderers. */
 (function (global) {
   'use strict';
 
@@ -33,18 +33,7 @@
 
   var TILT = -0.5;
   var LOOPS = 17;
-  var SEGS_PER_LOOP = 18;
-
-  // Deterministic PRNG so the hand-drawn shape is identical on every load.
-  function mulberry32(seed) {
-    return function () {
-      seed |= 0;
-      seed = (seed + 0x6d2b79f5) | 0;
-      var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
-  }
+  var SEGS_PER_LOOP = 32;
 
   function hexToRgb(hex) {
     var n = parseInt(hex.slice(1), 16);
@@ -52,7 +41,6 @@
   }
 
   function buildCluster(c, index) {
-    var rand = mulberry32(1018 + index * 97);
     var cosT = Math.cos(TILT);
     var sinT = Math.sin(TILT);
     var total = LOOPS * SEGS_PER_LOOP;
@@ -61,14 +49,14 @@
       var u = i / total;
       var env = Math.sin(u * Math.PI);
       var angle = u * LOOPS * Math.PI * 2;
-      var wobble = 0.86 + 0.22 * Math.sin(i * 1.1 + index * 2.3) + (rand() - 0.5) * 0.08;
+      var wobble = 0.88 + 0.22 * Math.sin(u * LOOPS * 2 * 1.1 + index * 2.3);
       var halfW = c.r * (0.3 + 0.7 * env) * wobble;
       var lx = Math.cos(angle) * halfW;
-      var ly = (u - 0.5) * c.r * 2 + (rand() - 0.5) * 6;
+      var ly = (u - 0.5) * c.r * 2;
       var x = c.cx + lx * cosT - ly * sinT;
       var y = c.cy + lx * sinT + ly * cosT;
       // Each loop is treated as a helix: z > 0 is the half nearer the viewer.
-      pts.push({ x: x, y: y, ox: x, oy: y, vx: 0, vy: 0, z: Math.sin(angle), seed: rand() * Math.PI * 2 });
+      pts.push({ x: x, y: y, ox: x, oy: y, vx: 0, vy: 0, z: Math.sin(angle) });
     }
     c.pts = pts;
     c.rgb = hexToRgb(c.color);
@@ -226,8 +214,8 @@
             p.vy += (dy / d) * f * 4.5 + pointer.vy * f * 0.45;
           }
         }
-        // Staggered vertical drift along the stroke, a couple of pixels.
-        var restY = p.oy + Math.sin(t * 0.9 + p.seed + i * 0.015) * 1.6;
+        // A slow wave travelling along the stroke; neighbours move together, so lines stay smooth.
+        var restY = p.oy + Math.sin(t * 0.9 + cl.phase + i * 0.03) * 1.6;
         p.vx += (p.ox - p.x) * STIFFNESS;
         p.vy += (restY - p.y) * STIFFNESS;
         p.vx *= DAMPING;
@@ -249,10 +237,10 @@
 
   // ------------------------------------------------------------------ visible geometry
 
-  // Visible window [tail, head] of a stroke in design space, with per-vertex parallax.
+  // Visible window [tail, head] of a stroke in design space.
   var vis = { x: [], y: [], z: [], s: [], n: 0 };
 
-  function pushPoint(cl, f, zx, zy) {
+  function pushPoint(cl, f) {
     var pts = cl.pts;
     var i = Math.min(Math.floor(f), pts.length - 2);
     var t = f - i;
@@ -260,8 +248,8 @@
     var b = pts[i + 1];
     var z = a.z + (b.z - a.z) * t;
     var k = vis.n++;
-    vis.x[k] = a.x + (b.x - a.x) * t + cl.offsetX + zx * z;
-    vis.y[k] = a.y + (b.y - a.y) * t + cl.offsetY + zy * z;
+    vis.x[k] = a.x + (b.x - a.x) * t + cl.offsetX;
+    vis.y[k] = a.y + (b.y - a.y) * t + cl.offsetY;
     vis.z[k] = z;
     vis.s[k] = f;
   }
@@ -272,57 +260,64 @@
     var from = cl.tail * last;
     var to = cl.head * last;
     if (to - from < 0.05) return 0;
-    var zx = -smooth.x * 14;
-    var zy = -smooth.y * 10;
-    pushPoint(cl, from, zx, zy);
-    for (var i = Math.floor(from) + 1; i < to; i++) pushPoint(cl, i, zx, zy);
-    pushPoint(cl, to, zx, zy);
+    pushPoint(cl, from);
+    for (var i = Math.floor(from) + 1; i < to; i++) pushPoint(cl, i);
+    pushPoint(cl, to);
     return vis.n;
   }
 
   // ------------------------------------------------------------------ WebGL renderer
 
+  // One quad per segment; the fragment shader turns it into a round-capped capsule, so joins stay smooth.
   var STROKE_VS = [
     'attribute vec2 aPos;',
-    'attribute vec2 aSide;',
-    'attribute float aZ;',
+    'attribute vec4 aSeg;',
+    'attribute vec4 aMeta;',
     'uniform vec4 uView;',
     'uniform vec2 uRes;',
-    'varying vec2 vSide;',
-    'varying float vZ;',
+    'varying vec2 vP;',
+    'varying vec4 vSeg;',
+    'varying vec4 vMeta;',
     'void main() {',
     '  vec2 px = (aPos * uView.x + uView.yz) * uView.w;',
     '  vec2 clip = px / uRes * 2.0 - 1.0;',
     '  gl_Position = vec4(clip.x, -clip.y, 0.0, 1.0);',
-    '  vSide = aSide;',
-    '  vZ = aZ;',
+    '  vP = aPos;',
+    '  vSeg = aSeg;',
+    '  vMeta = aMeta;',
     '}',
   ].join('\n');
 
   var STROKE_FS = [
-    'precision mediump float;',
+    'precision highp float;',
     'uniform vec3 uColor;',
     'uniform float uAlpha;',
     'uniform float uSeed;',
-    'varying vec2 vSide;',
-    'varying float vZ;',
+    'uniform float uHalf;',
+    'uniform float uAA;',
+    'varying vec2 vP;',
+    'varying vec4 vSeg;',
+    'varying vec4 vMeta;',
     'float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }',
     'float noise(vec2 p) {',
     '  vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 * f);',
     '  return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);',
     '}',
     'void main() {',
-    '  float v = vSide.x;',
-    '  float edge = smoothstep(1.0, 0.65, abs(v));',
+    '  vec2 a = vSeg.xy; vec2 ab = vSeg.zw - a;',
+    '  float t = clamp(dot(vP - a, ab) / max(dot(ab, ab), 1e-6), 0.0, 1.0);',
+    '  float d = length(vP - a - ab * t);',
+    '  if (d > uHalf + uAA) discard;',
+    '  float v = d / uHalf;',
+    '  float edge = 1.0 - smoothstep(uHalf - uAA, uHalf + uAA, d);',
     '  float tube = sqrt(max(0.0, 1.0 - v * v));',
-    '  float depth = 0.5 + 0.5 * vZ;',
-    // Paper tooth (screen space) plus streaks dragged along the stroke = crayon grain.
-    '  float tooth = noise(gl_FragCoord.xy * 0.42 + uSeed);',
-    '  float streak = noise(vec2(vSide.y * 2.2, v * 2.0 + uSeed));',
-    '  float grain = smoothstep(0.2, 0.5, tooth * 0.55 + streak * 0.6);',
-    '  float a = uAlpha * edge * grain * mix(0.7, 1.0, depth);',
-    '  vec3 col = min(uColor * mix(0.8, 1.12, tube) * mix(0.82, 1.0, depth), 1.0);',
-    '  gl_FragColor = vec4(col * a, a);',
+    '  float along = mix(vMeta.x, vMeta.y, t);',
+    '  float depth = 0.5 + 0.5 * mix(vMeta.z, vMeta.w, t);',
+    // Gentle density variation along the stroke (no speckles).
+    '  float grain = mix(0.85, 1.0, noise(vec2(along * 0.9, uSeed)));',
+    '  float alpha = uAlpha * edge * grain * mix(0.75, 1.0, depth);',
+    '  vec3 col = min(uColor * mix(0.85, 1.1, tube) * mix(0.85, 1.0, depth), 1.0);',
+    '  gl_FragColor = vec4(col * alpha, alpha);',
     '}',
   ].join('\n');
 
@@ -390,13 +385,15 @@
 
     var sLoc = {
       pos: gl.getAttribLocation(strokeProg, 'aPos'),
-      side: gl.getAttribLocation(strokeProg, 'aSide'),
-      z: gl.getAttribLocation(strokeProg, 'aZ'),
+      seg: gl.getAttribLocation(strokeProg, 'aSeg'),
+      meta: gl.getAttribLocation(strokeProg, 'aMeta'),
       view: gl.getUniformLocation(strokeProg, 'uView'),
       res: gl.getUniformLocation(strokeProg, 'uRes'),
       color: gl.getUniformLocation(strokeProg, 'uColor'),
       alpha: gl.getUniformLocation(strokeProg, 'uAlpha'),
       seed: gl.getUniformLocation(strokeProg, 'uSeed'),
+      half: gl.getUniformLocation(strokeProg, 'uHalf'),
+      aa: gl.getUniformLocation(strokeProg, 'uAA'),
     };
     var cPos = gl.getAttribLocation(compProg, 'aPos');
 
@@ -404,8 +401,8 @@
     gl.bindBuffer(gl.ARRAY_BUFFER, quad);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
 
-    var FLOATS = 5;
-    var maxVerts = (CLUSTERS[0].pts.length + 4) * 2;
+    var FLOATS = 10;
+    var maxVerts = (CLUSTERS[0].pts.length + 4) * 6;
     var data = new Float32Array(maxVerts * FLOATS);
     var vbo = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
@@ -431,38 +428,62 @@
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     }
 
-    // Triangle strip along the visible stroke; aSide = (across -1..1, along).
-    function buildStrip(halfWidth, shiftX, shiftY) {
+    // Two triangles per segment, padded by the stroke radius so the capsule fits inside.
+    function buildSegments(halfWidth, shiftX, shiftY) {
       var n = vis.n;
       var o = 0;
-      for (var i = 0; i < n; i++) {
-        var i0 = i > 0 ? i - 1 : i;
-        var i1 = i < n - 1 ? i + 1 : i;
-        var tx = vis.x[i1] - vis.x[i0];
-        var ty = vis.y[i1] - vis.y[i0];
-        var len = Math.sqrt(tx * tx + ty * ty) || 1;
-        var nx = (-ty / len) * halfWidth;
-        var ny = (tx / len) * halfWidth;
-        var x = vis.x[i] + shiftX;
-        var y = vis.y[i] + shiftY;
-        var along = vis.s[i];
-        data[o++] = x + nx; data[o++] = y + ny; data[o++] = -1; data[o++] = along; data[o++] = vis.z[i];
-        data[o++] = x - nx; data[o++] = y - ny; data[o++] = 1; data[o++] = along; data[o++] = vis.z[i];
+      var pad = halfWidth + 1.5 / (view.scale * view.dpr);
+      for (var i = 0; i < n - 1; i++) {
+        var ax = vis.x[i] + shiftX;
+        var ay = vis.y[i] + shiftY;
+        var bx = vis.x[i + 1] + shiftX;
+        var by = vis.y[i + 1] + shiftY;
+        var dx = bx - ax;
+        var dy = by - ay;
+        var len = Math.sqrt(dx * dx + dy * dy);
+        if (len < 1e-4) {
+          dx = 1;
+          dy = 0;
+        } else {
+          dx /= len;
+          dy /= len;
+        }
+        var ux = dx * pad;
+        var uy = dy * pad;
+        var nx = -dy * pad;
+        var ny = dx * pad;
+        var corners = [
+          ax - ux + nx, ay - uy + ny,
+          ax - ux - nx, ay - uy - ny,
+          bx + ux + nx, by + uy + ny,
+          bx + ux - nx, by + uy - ny,
+        ];
+        var order = [0, 1, 2, 2, 1, 3];
+        for (var k = 0; k < 6; k++) {
+          var c = order[k] * 2;
+          data[o++] = corners[c];
+          data[o++] = corners[c + 1];
+          data[o++] = ax; data[o++] = ay; data[o++] = bx; data[o++] = by;
+          data[o++] = vis.s[i]; data[o++] = vis.s[i + 1]; data[o++] = vis.z[i]; data[o++] = vis.z[i + 1];
+        }
       }
-      return n * 2;
+      return Math.max(0, n - 1) * 6;
     }
 
-    function drawStrip(count) {
+    function drawSegments(count, halfWidth) {
+      if (!count) return;
+      gl.uniform1f(sLoc.half, halfWidth);
+      gl.uniform1f(sLoc.aa, 0.75 / (view.scale * view.dpr));
       gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
       gl.bufferSubData(gl.ARRAY_BUFFER, 0, data.subarray(0, count * FLOATS));
       var stride = FLOATS * 4;
       gl.enableVertexAttribArray(sLoc.pos);
       gl.vertexAttribPointer(sLoc.pos, 2, gl.FLOAT, false, stride, 0);
-      gl.enableVertexAttribArray(sLoc.side);
-      gl.vertexAttribPointer(sLoc.side, 2, gl.FLOAT, false, stride, 8);
-      gl.enableVertexAttribArray(sLoc.z);
-      gl.vertexAttribPointer(sLoc.z, 1, gl.FLOAT, false, stride, 16);
-      gl.drawArrays(gl.TRIANGLE_STRIP, 0, count);
+      gl.enableVertexAttribArray(sLoc.seg);
+      gl.vertexAttribPointer(sLoc.seg, 4, gl.FLOAT, false, stride, 8);
+      gl.enableVertexAttribArray(sLoc.meta);
+      gl.vertexAttribPointer(sLoc.meta, 4, gl.FLOAT, false, stride, 24);
+      gl.drawArrays(gl.TRIANGLES, 0, count);
     }
 
     resizeLayers();
@@ -494,10 +515,10 @@
           gl.uniform3f(sLoc.color, cl.rgb[0], cl.rgb[1], cl.rgb[2]);
           gl.uniform1f(sLoc.seed, cl.index * 17.3);
           gl.uniform1f(sLoc.alpha, cl.alpha);
-          drawStrip(buildStrip(STROKE_WIDTH / 2, 0, 0));
+          drawSegments(buildSegments(STROKE_WIDTH / 2, 0, 0), STROKE_WIDTH / 2);
           // Thin offset echo line gives the doubled crayon edge.
           gl.uniform1f(sLoc.alpha, cl.alpha * 0.45);
-          drawStrip(buildStrip(ECHO_WIDTH / 2, 3, -2));
+          drawSegments(buildSegments(ECHO_WIDTH / 2, 3, -2), ECHO_WIDTH / 2);
         }
 
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -526,23 +547,6 @@
     if (!ctx) return null;
     var layer = doc.createElement('canvas');
     var lctx = layer.getContext('2d');
-
-    // Static crayon grain: punched out of the strokes with destination-out.
-    var grain = (function () {
-      var size = 160;
-      var g = doc.createElement('canvas');
-      g.width = g.height = size;
-      var gctx = g.getContext('2d');
-      var img = gctx.createImageData(size, size);
-      var rand = mulberry32(42);
-      for (var i = 0; i < img.data.length; i += 4) {
-        var v = rand();
-        img.data[i] = img.data[i + 1] = img.data[i + 2] = 0;
-        img.data[i + 3] = v > 0.72 ? Math.floor((v - 0.72) * 520) : 0;
-      }
-      gctx.putImageData(img, 0, 0);
-      return ctx.createPattern(g, 'repeat');
-    })();
 
     function tracePath(c2, shiftX, shiftY) {
       c2.beginPath();
@@ -592,10 +596,6 @@
         }
 
         ctx.globalAlpha = 1;
-        ctx.globalCompositeOperation = 'destination-out';
-        ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
-        ctx.fillStyle = grain;
-        ctx.fillRect(0, 0, view.w, view.h);
         ctx.globalCompositeOperation = 'source-over';
       },
     };
