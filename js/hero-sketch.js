@@ -27,7 +27,7 @@
   var FLICK_CHANCE = 0.85;
   var FLICK_PER_FRAME = 6;
   // Share of crossings that leave a drip running down from the line instead of a flicked drop.
-  var DRIP_SHARE = 0.5;
+  var DRIP_SHARE = 0.2;
   var DRIP_LEN = 34;
   // Lines near the cursor ease aside like hair under a fingertip, then settle back; no spring.
   var PART_RADIUS_PX = 80;
