@@ -72,7 +72,7 @@
   // ------------------------------------------------------------------ view & input
 
   var view = { scale: 1, ox: 0, oy: 0, dpr: 1, w: 0, h: 0 };
-  var pointer = { x: -1e4, y: -1e4, vx: 0, vy: 0, active: false };
+  var pointer = { x: -1e4, y: -1e4, vx: 0, vy: 0, active: false, cssX: 0, cssY: 0, amount: 0 };
   var target = { x: 0, y: 0 };
   var smooth = { x: 0, y: 0 };
   var renderer = null;
@@ -118,6 +118,8 @@
     }
     pointer.x = dx;
     pointer.y = dy;
+    pointer.cssX = e.clientX - rect.left;
+    pointer.cssY = e.clientY - rect.top;
     pointer.active = true;
   }
 
@@ -226,6 +228,7 @@
     }
     pointer.vx *= 0.85;
     pointer.vy *= 0.85;
+    pointer.amount += ((pointer.active ? 1 : 0) - pointer.amount) * 0.06;
 
     if (content) {
       content.style.transform =
@@ -327,14 +330,25 @@
     'void main() { vUv = aPos * 0.5 + 0.5; gl_Position = vec4(aPos, 0.0, 1.0); }',
   ].join('\n');
 
-  // Exact W3C "multiply" compositing of the colour layers, back to front, over a transparent canvas.
+  // Halftone background (faint neutral screen, CMYK rosette blooming around the cursor), then
+  // exact W3C "multiply" compositing of the colour layers, back to front, over a transparent canvas.
   var COMPOSITE_FS = [
-    'precision mediump float;',
+    'precision highp float;',
     'uniform sampler2D uL0;',
     'uniform sampler2D uL1;',
     'uniform sampler2D uL2;',
     'uniform sampler2D uL3;',
+    'uniform vec2 uRes;',
+    'uniform float uDpr;',
+    'uniform vec3 uMouse;',
     'varying vec2 vUv;',
+    'float dots(vec2 p, float ang, float cell, float r) {',
+    '  float c = cos(ang); float s = sin(ang);',
+    '  vec2 q = vec2(c * p.x - s * p.y, s * p.x + c * p.y) / cell;',
+    '  float d = length(fract(q) - 0.5) * cell;',
+    '  return 1.0 - smoothstep(r - 0.7, r + 0.7, d);',
+    '}',
+    'vec4 over(vec4 acc, vec4 s) { return s + acc * (1.0 - s.a); }',
     'vec4 blend(vec4 acc, vec4 s) {',
     '  if (s.a <= 0.0) return acc;',
     '  vec3 cs = s.rgb / s.a;',
@@ -343,7 +357,21 @@
     '  return vec4(s.a * mixed + (1.0 - s.a) * acc.rgb, s.a + acc.a * (1.0 - s.a));',
     '}',
     'void main() {',
-    '  vec4 acc = vec4(0.0);',
+    '  vec2 p = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y) / uDpr;',
+    '  vec2 dm = p - uMouse.xy;',
+    '  float near = uMouse.z * exp(-dot(dm, dm) / (2.0 * 110.0 * 110.0));',
+    '  float cell = 16.0;',
+    '  float n = dots(p, 0.785, cell, 1.0 + 1.2 * near) * 0.07;',
+    '  vec4 acc = vec4(vec3(n), n);',
+    '  if (near > 0.05) {',
+    '    float r = (near - 0.05) * 3.8;',
+    '    float c = dots(p, 0.262, cell, r) * 0.6;',
+    '    float m = dots(p, 1.309, cell, r) * 0.6;',
+    '    float y = dots(p, 0.0, cell, r * 0.9) * 0.6;',
+    '    acc = over(acc, vec4(vec3(1.0, 0.949, 0.0) * y, y));',
+    '    acc = over(acc, vec4(vec3(0.925, 0.0, 0.549) * m, m));',
+    '    acc = over(acc, vec4(vec3(0.0, 0.682, 0.937) * c, c));',
+    '  }',
     '  acc = blend(acc, texture2D(uL0, vUv));',
     '  acc = blend(acc, texture2D(uL1, vUv));',
     '  acc = blend(acc, texture2D(uL2, vUv));',
@@ -525,6 +553,9 @@
         gl.disable(gl.BLEND);
         gl.blendEquation(gl.FUNC_ADD);
         gl.useProgram(compProg);
+        gl.uniform2f(gl.getUniformLocation(compProg, 'uRes'), canvas.width, canvas.height);
+        gl.uniform1f(gl.getUniformLocation(compProg, 'uDpr'), view.dpr);
+        gl.uniform3f(gl.getUniformLocation(compProg, 'uMouse'), pointer.cssX, pointer.cssY, pointer.amount);
         for (var k = 0; k < layers.length; k++) {
           gl.activeTexture(gl.TEXTURE0 + k);
           gl.bindTexture(gl.TEXTURE_2D, layers[k].tex);

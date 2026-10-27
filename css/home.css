@@ -42,6 +42,90 @@
   opacity: 1;
 }
 
+/* Static halftone screen when WebGL (which draws an interactive one) is unavailable. */
+.hero:not([data-renderer="webgl"]) {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1.6px);
+  background-size: 16px 16px;
+}
+
+/* ---------- Print-proof marks ---------- */
+
+.hero-marks {
+  --mark: rgba(255, 255, 255, 0.32);
+  position: absolute;
+  inset: 76px clamp(14px, 3vw, 36px) calc(clamp(60px, 12vw, 150px) + 10px);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.crop {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  border: 0 solid var(--mark);
+}
+
+.crop--tl { top: 0; left: 0; border-top-width: 1px; border-left-width: 1px; }
+.crop--tr { top: 0; right: 0; border-top-width: 1px; border-right-width: 1px; }
+.crop--bl { bottom: 0; left: 0; border-bottom-width: 1px; border-left-width: 1px; }
+.crop--br { bottom: 0; right: 0; border-bottom-width: 1px; border-right-width: 1px; }
+
+.reg {
+  position: absolute;
+  top: 50%;
+  width: 26px;
+  height: 26px;
+  margin-top: -13px;
+  fill: none;
+  stroke: var(--mark);
+  stroke-width: 1.2;
+}
+
+.reg--l { left: 0; }
+.reg--r { right: 0; }
+
+.slug {
+  position: absolute;
+  top: 6px;
+  left: 40px;
+  margin: 0;
+  color: var(--mark);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.color-bar {
+  position: absolute;
+  right: 40px;
+  bottom: 6px;
+  display: flex;
+  gap: 3px;
+  opacity: 0.75;
+}
+
+.color-bar i {
+  width: 12px;
+  height: 12px;
+}
+
+.color-bar i:nth-child(1) { background: var(--cmyk-c); }
+.color-bar i:nth-child(2) { background: var(--cmyk-m); }
+.color-bar i:nth-child(3) { background: var(--cmyk-y); }
+.color-bar i:nth-child(4) { background: var(--cmyk-k); }
+.color-bar i:nth-child(5) { background: #ed1c24; }
+.color-bar i:nth-child(6) { background: #00a651; }
+.color-bar i:nth-child(7) { background: #2e3192; }
+
+@media (max-width: 640px) {
+  .slug,
+  .color-bar,
+  .reg {
+    display: none;
+  }
+}
+
 .hero-content {
   position: relative;
   z-index: 2;
