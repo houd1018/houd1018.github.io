@@ -12,6 +12,9 @@
   var content = doc.getElementById('hero-content');
   var reduceMotion = global.matchMedia && global.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var forced2d = /[?&]hero=2d\b/.test(global.location.search);
+  // Subpage bands: data-sketch-mode="static" (no intro, re-sketch or double-click), data-sketch-fit="cover".
+  var staticMode = reduceMotion || hero.getAttribute('data-sketch-mode') === 'static';
+  var coverFit = hero.getAttribute('data-sketch-fit') === 'cover';
 
   var DESIGN_H = 680;
   var PLUCK_RADIUS_PX = 42;
@@ -63,7 +66,7 @@
     c.index = index;
     c.offsetX = 0;
     c.offsetY = 0;
-    c.head = reduceMotion ? 1 : 0;
+    c.head = staticMode ? 1 : 0;
     c.tail = 0;
   }
 
@@ -86,8 +89,11 @@
     canvas.height = Math.max(1, Math.round(rect.height * view.dpr));
     canvas.style.width = rect.width + 'px';
     canvas.style.height = rect.height + 'px';
-    // Contain-fit by height; on narrow screens let the scribbles span most of the width.
-    view.scale = Math.min(rect.height / DESIGN_H, rect.width / 800);
+    // Home: contain-fit by height (scribbles span most of the width on narrow screens).
+    // Bands: fill the width so the scribbles read as a backdrop behind the title.
+    view.scale = coverFit
+      ? Math.max(rect.width / 1200, rect.height / 500)
+      : Math.min(rect.height / DESIGN_H, rect.width / 800);
     view.ox = (rect.width - 1200 * view.scale) / 2;
     // Center the scribble cluster (design y≈300) on the hero text block.
     var anchorY = rect.height / 2;
@@ -133,7 +139,7 @@
   // ------------------------------------------------------------------ animation state
 
   // drawing: heads grow 0→1 | shown: idle | erasing: tails chase heads, then drawing restarts.
-  var anim = { mode: reduceMotion ? 'shown' : 'drawing', start: null };
+  var anim = { mode: staticMode ? 'shown' : 'drawing', start: null };
 
   function easeInOutCubic(t) {
     return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
@@ -150,7 +156,7 @@
   }
 
   function requestRedraw() {
-    if (reduceMotion || anim.mode !== 'shown') return;
+    if (staticMode || anim.mode !== 'shown') return;
     setMode('erasing', null);
   }
 
@@ -178,7 +184,7 @@
         for (i = 0; i < CLUSTERS.length; i++) CLUSTERS[i].head = CLUSTERS[i].tail = 0;
         setMode('drawing', time);
       }
-    } else if (time - lastActivity > IDLE_REDRAW_MS) {
+    } else if (!staticMode && time - lastActivity > IDLE_REDRAW_MS) {
       requestRedraw();
     }
   }
@@ -760,12 +766,14 @@
   markActivity();
   hero.addEventListener('pointermove', onPointerMove, { passive: true });
   hero.addEventListener('pointerleave', onPointerLeave);
-  hero.addEventListener('dblclick', function (e) {
-    if (e.target.closest && e.target.closest('a')) return;
-    var sel = global.getSelection && global.getSelection();
-    if (sel) sel.removeAllRanges();
-    requestRedraw();
-  });
+  if (!staticMode) {
+    hero.addEventListener('dblclick', function (e) {
+      if (e.target.closest && e.target.closest('a')) return;
+      var sel = global.getSelection && global.getSelection();
+      if (sel) sel.removeAllRanges();
+      requestRedraw();
+    });
+  }
   global.addEventListener('scroll', markActivity, { passive: true });
   global.addEventListener('keydown', markActivity);
 

@@ -70,7 +70,8 @@ Page skeleton (keep it identical across pages for easy bulk maintenance; copy an
 <body class="page-content" data-project="{slug}">
   <a class="skip-link" href="#main">Skip to content</a>
   <header class="site-header"><!-- brand + nav: Home | About Me | Projects | Blog | Contact --></header>
-  <section class="page-hero content-header">
+  <section class="page-hero content-header" id="hero" data-sketch-mode="static" data-sketch-fit="cover">
+    <canvas id="hero-canvas" aria-hidden="true"></canvas>
     <p class="content-category">{Category Label}</p>
     <h1>{Title}</h1>
     <p class="content-subtitle">{subtitle}</p>
@@ -83,6 +84,7 @@ Page skeleton (keep it identical across pages for easy bulk maintenance; copy an
   <script src="../data/projects.js"></script>
   <script src="../js/lightbox.js"></script>
   <script src="../js/content.js"></script>
+  <script src="../js/hero-sketch.js"></script>
 </body>
 </html>
 ```

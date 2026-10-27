@@ -488,7 +488,8 @@ def render_page(project: Dict, body: str, related_url: Optional[str]) -> str:
     </nav>
   </header>
 
-  <section class="page-hero content-header">
+  <section class="page-hero content-header" id="hero" data-sketch-mode="static" data-sketch-fit="cover">
+    <canvas id="hero-canvas" aria-hidden="true"></canvas>
     <p class="content-category">{esc(label)}</p>
     <h1>{esc(project["title"])}</h1>{subtitle}
   </section>
@@ -506,6 +507,7 @@ def render_page(project: Dict, body: str, related_url: Optional[str]) -> str:
   <script src="../data/projects.js"></script>
   <script src="../js/lightbox.js"></script>
   <script src="../js/content.js"></script>
+  <script src="../js/hero-sketch.js"></script>
 </body>
 </html>
 """
