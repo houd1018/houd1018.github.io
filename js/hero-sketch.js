@@ -28,7 +28,7 @@
   var FLICK_PER_FRAME = 6;
   // Share of crossings that leave a drip running down from the line instead of a flicked drop.
   var DRIP_SHARE = 0.5;
-  var DRIP_LEN = 30;
+  var DRIP_LEN = 34;
   // Lines near the cursor ease aside like hair under a fingertip, then settle back; no spring.
   var PART_RADIUS_PX = 80;
   var PART_PUSH_PX = 18;
@@ -248,9 +248,16 @@
     for (var i = specks.length - 1; i >= 0; i--) {
       var s = specks[i];
       s.age += dt;
+      if (s.drip) {
+        // Hangs from its line point (follows breathing/parting); runs fast at first, then slows and stops.
+        s.x = s.pt.x + s.pt.px;
+        s.y0 = s.pt.y + s.pt.py;
+        s.y = s.y0 + s.len * (1 - Math.exp(-s.age * s.k));
+        if (s.age >= s.life) specks.splice(i, 1);
+        continue;
+      }
       s.x += s.vx;
       s.y += s.vy;
-      if (s.drip && s.y - s.y0 > DRIP_LEN) s.y0 = s.y - DRIP_LEN;
       s.vx *= 0.92;
       s.vy = s.vy * 0.92 + (s.g || 0);
       if (s.age >= s.life) specks.splice(i, 1);
@@ -259,6 +266,8 @@
 
   function speckAlpha(s) {
     var fadeIn = Math.min(1, s.age / 0.08);
+    // Drips stay wet and solid, fading only near the end.
+    if (s.drip) return fadeIn * Math.min(1, (1 - s.age / s.life) / 0.35);
     return fadeIn * Math.pow(1 - s.age / s.life, 1.5);
   }
 
@@ -325,12 +334,13 @@
                   var ly = p.y + p.py;
                   specks.push({
                     drip: true,
-                    x: lx, y: ly, x0: lx, y0: ly,
-                    vx: 0, vy: 0.2,
-                    g: 0.03 + Math.random() * 0.04,
-                    r: 1.3 + Math.random() * 0.8,
+                    pt: p,
+                    x: lx, y: ly, y0: ly,
+                    len: DRIP_LEN * (0.45 + Math.random() * 0.55),
+                    k: 1.2 + Math.random() * 0.8,
+                    r: 1.6 + Math.random() * 0.9,
                     age: 0,
-                    life: 1.6 + Math.random() * 1.0,
+                    life: 2.2 + Math.random() * 1.0,
                   });
                 } else {
                   var sp = 0.5 + Math.random() * 0.7;
@@ -445,6 +455,7 @@
     'uniform float uSeed;',
     'uniform float uHalf;',
     'uniform float uSwell;',
+    'uniform float uInkMix;',
     'uniform float uAA;',
     'varying vec2 vP;',
     'varying vec4 vSeg;',
@@ -472,8 +483,9 @@
     '  float alpha = uAlpha * edge * grain * mix(0.75, 1.0, depth);',
     '  vec3 col = min(uColor * mix(0.85, 1.1, tube) * mix(0.85, 1.0, depth), 1.0);',
     // Re-inked parts: fully opaque and full-strength colour, like a second, harder pass of the crayon.
-    '  alpha = mix(alpha, edge, ink);',
-    '  col = mix(col, uColor, ink);',
+    '  float inkC = clamp(ink, 0.0, 1.0) * uInkMix;',
+    '  alpha = mix(alpha, edge, inkC);',
+    '  col = mix(col, uColor, inkC);',
     '  gl_FragColor = vec4(col * alpha, alpha);',
     '}',
   ].join('\n');
@@ -569,6 +581,7 @@
       seed: gl.getUniformLocation(strokeProg, 'uSeed'),
       half: gl.getUniformLocation(strokeProg, 'uHalf'),
       swell: gl.getUniformLocation(strokeProg, 'uSwell'),
+      inkMix: gl.getUniformLocation(strokeProg, 'uInkMix'),
       aa: gl.getUniformLocation(strokeProg, 'uAA'),
     };
     var cPos = gl.getAttribLocation(compProg, 'aPos');
@@ -673,10 +686,44 @@
       return 6;
     }
 
-    function drawSegments(count, halfWidth) {
+    // Drip radius along its length (u = 0 at the line, 1 at the bulb centre), in units of the neck radius.
+    function dripProfile(u) {
+      return 1 + 0.9 * Math.exp(-u / 0.1) + 1.4 * Math.exp(-((u - 1) * (u - 1)) / 0.03);
+    }
+
+    // A tapered run hanging from the line: wide where it leaves the stroke, a thin neck, then a teardrop bulb.
+    // The radius is passed through aInk and widened by uSwell = 1, with uInkMix = 0 so it doesn't affect colour.
+    function buildDrip(x, y0, y1, neck) {
+      var n = 14;
+      var aaPad = 1.5 / (view.scale * view.dpr);
+      var o = 0;
+      for (var i = 0; i < n; i++) {
+        var ua = i / n;
+        var ub = (i + 1) / n;
+        var ya = y0 + (y1 - y0) * ua;
+        var yb = y0 + (y1 - y0) * ub;
+        var wa = dripProfile(ua) - 1;
+        var wb = dripProfile(ub) - 1;
+        var pad = neck * (1 + Math.max(wa, wb)) + aaPad;
+        var corners = [x - pad, ya - pad, x + pad, ya - pad, x - pad, yb + pad, x + pad, yb + pad];
+        var order = [0, 1, 2, 2, 1, 3];
+        for (var k = 0; k < 6; k++) {
+          var c = order[k] * 2;
+          data[o++] = corners[c];
+          data[o++] = corners[c + 1];
+          data[o++] = x; data[o++] = ya; data[o++] = x; data[o++] = yb;
+          data[o++] = 0; data[o++] = 0; data[o++] = 1; data[o++] = 1;
+          data[o++] = wa; data[o++] = wb;
+        }
+      }
+      return n * 6;
+    }
+
+    function drawSegments(count, halfWidth, swell, inkMix) {
       if (!count) return;
       gl.uniform1f(sLoc.half, halfWidth);
-      gl.uniform1f(sLoc.swell, INK_SWELL);
+      gl.uniform1f(sLoc.swell, swell === undefined ? INK_SWELL : swell);
+      gl.uniform1f(sLoc.inkMix, inkMix === undefined ? 1 : inkMix);
       gl.uniform1f(sLoc.aa, 0.75 / (view.scale * view.dpr));
       gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
       gl.bufferSubData(gl.ARRAY_BUFFER, 0, data.subarray(0, count * FLOATS));
@@ -732,9 +779,8 @@
             var sy = sk.y + cl.offsetY;
             gl.uniform1f(sLoc.alpha, speckAlpha(sk));
             if (sk.drip) {
-              // Thin run from the line down to a rounder drop at its end.
-              drawSegments(buildDot(sk.x0 + cl.offsetX, sk.y0 + cl.offsetY, sk.r, sx, sy), sk.r);
-              drawSegments(buildDot(sx, sy, sk.r * 1.8), sk.r * 1.8);
+              var neck = sk.r * 0.6;
+              drawSegments(buildDrip(sx, sk.y0 + cl.offsetY, sy, neck), neck, 1, 0);
             } else {
               drawSegments(buildDot(sx, sy, sk.r), sk.r);
             }
