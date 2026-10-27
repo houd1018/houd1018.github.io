@@ -437,12 +437,14 @@
     'attribute vec4 aSeg;',
     'attribute vec4 aMeta;',
     'attribute vec2 aInk;',
+    'attribute float aAlpha;',
     'uniform vec4 uView;',
     'uniform vec2 uRes;',
     'varying vec2 vP;',
     'varying vec4 vSeg;',
     'varying vec4 vMeta;',
     'varying vec2 vInk;',
+    'varying float vAlpha;',
     'void main() {',
     '  vec2 px = (aPos * uView.x + uView.yz) * uView.w;',
     '  vec2 clip = px / uRes * 2.0 - 1.0;',
@@ -451,6 +453,7 @@
     '  vSeg = aSeg;',
     '  vMeta = aMeta;',
     '  vInk = aInk;',
+    '  vAlpha = aAlpha;',
     '}',
   ].join('\n');
 
@@ -467,6 +470,7 @@
     'varying vec4 vSeg;',
     'varying vec4 vMeta;',
     'varying vec2 vInk;',
+    'varying float vAlpha;',
     'float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }',
     'float noise(vec2 p) {',
     '  vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 * f);',
@@ -492,6 +496,7 @@
     '  float inkC = clamp(ink, 0.0, 1.0) * uInkMix;',
     '  alpha = mix(alpha, edge, inkC);',
     '  col = mix(col, uColor, inkC);',
+    '  alpha *= vAlpha;',
     '  gl_FragColor = vec4(col * alpha, alpha);',
     '}',
   ].join('\n');
@@ -589,15 +594,25 @@
       swell: gl.getUniformLocation(strokeProg, 'uSwell'),
       inkMix: gl.getUniformLocation(strokeProg, 'uInkMix'),
       aa: gl.getUniformLocation(strokeProg, 'uAA'),
+      vAlpha: gl.getAttribLocation(strokeProg, 'aAlpha'),
     };
     var cPos = gl.getAttribLocation(compProg, 'aPos');
+    var cLoc = {
+      res: gl.getUniformLocation(compProg, 'uRes'),
+      dpr: gl.getUniformLocation(compProg, 'uDpr'),
+      mouse: gl.getUniformLocation(compProg, 'uMouse'),
+    };
+    gl.useProgram(compProg);
+    for (var li = 0; li < CLUSTERS.length; li++) gl.uniform1i(gl.getUniformLocation(compProg, 'uL' + li), li);
 
     var quad = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, quad);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
 
-    var FLOATS = 12;
-    var maxVerts = (CLUSTERS[0].pts.length + 4) * 6;
+    var FLOATS = 13;
+    var DRIP_SEGS = 14;
+    // Room for a full stroke, or for every speck of a layer drawn as a drip in one batch.
+    var maxVerts = Math.max((CLUSTERS[0].pts.length + 4) * 6, SPECK_MAX * DRIP_SEGS * 6);
     var data = new Float32Array(maxVerts * FLOATS);
     var vbo = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
@@ -662,34 +677,28 @@
           data[o++] = ax; data[o++] = ay; data[o++] = bx; data[o++] = by;
           data[o++] = vis.s[i]; data[o++] = vis.s[i + 1]; data[o++] = vis.z[i]; data[o++] = vis.z[i + 1];
           data[o++] = vis.ink[i]; data[o++] = vis.ink[i + 1];
+          data[o++] = 1;
         }
       }
       return Math.max(0, n - 1) * 6;
     }
 
-    // A capsule from (x, y) to (x2, y2); a round dot when the end is omitted.
-    function buildDot(x, y, halfWidth, x2, y2) {
-      if (x2 === undefined) {
-        x2 = x;
-        y2 = y;
-      }
-      var pad = halfWidth + 1.5 / (view.scale * view.dpr);
-      var minX = Math.min(x, x2) - pad;
-      var maxX = Math.max(x, x2) + pad;
-      var minY = Math.min(y, y2) - pad;
-      var maxY = Math.max(y, y2) + pad;
-      var corners = [minX, minY, maxX, minY, minX, maxY, maxX, maxY];
+    // Writes one axis-aligned quad holding a vertical capsule (or a dot when ya === yb) at offset o.
+    // Radius rides in aInk with uHalf = 1, uSwell = 1 and uInkMix = 0, so specks and drips share one draw.
+    function putCapsule(o, x, ya, yb, ra, rb, alpha, aaPad) {
+      var pad = Math.max(ra, rb) + aaPad;
+      var corners = [x - pad, ya - pad, x + pad, ya - pad, x - pad, yb + pad, x + pad, yb + pad];
       var order = [0, 1, 2, 2, 1, 3];
-      var o = 0;
       for (var k = 0; k < 6; k++) {
         var c = order[k] * 2;
         data[o++] = corners[c];
         data[o++] = corners[c + 1];
-        data[o++] = x; data[o++] = y; data[o++] = x2; data[o++] = y2;
+        data[o++] = x; data[o++] = ya; data[o++] = x; data[o++] = yb;
         data[o++] = 0; data[o++] = 0; data[o++] = 1; data[o++] = 1;
-        data[o++] = 0; data[o++] = 0;
+        data[o++] = ra - 1; data[o++] = rb - 1;
+        data[o++] = alpha;
       }
-      return 6;
+      return o;
     }
 
     // Drip radius along its length (u = 0 at the line, 1 at the tip), in units of the top radius.
@@ -698,31 +707,32 @@
       return 1 + (1.0 + 1.0 * g) * Math.pow(u, 2.2);
     }
 
-    // The radius is passed through aInk and widened by uSwell = 1, with uInkMix = 0 so it doesn't affect colour.
-    function buildDrip(x, y0, y1, neck, g) {
-      var n = 14;
+    // All specks and drips of one colour layer in a single vertex batch.
+    function buildSpecks(cl) {
+      var specks = cl.specks || [];
       var aaPad = 1.5 / (view.scale * view.dpr);
       var o = 0;
-      for (var i = 0; i < n; i++) {
-        var ua = i / n;
-        var ub = (i + 1) / n;
-        var ya = y0 + (y1 - y0) * ua;
-        var yb = y0 + (y1 - y0) * ub;
-        var wa = dripProfile(ua, g) - 1;
-        var wb = dripProfile(ub, g) - 1;
-        var pad = neck * (1 + Math.max(wa, wb)) + aaPad;
-        var corners = [x - pad, ya - pad, x + pad, ya - pad, x - pad, yb + pad, x + pad, yb + pad];
-        var order = [0, 1, 2, 2, 1, 3];
-        for (var k = 0; k < 6; k++) {
-          var c = order[k] * 2;
-          data[o++] = corners[c];
-          data[o++] = corners[c + 1];
-          data[o++] = x; data[o++] = ya; data[o++] = x; data[o++] = yb;
-          data[o++] = 0; data[o++] = 0; data[o++] = 1; data[o++] = 1;
-          data[o++] = wa; data[o++] = wb;
+      for (var s = 0; s < specks.length; s++) {
+        var sk = specks[s];
+        var a = speckAlpha(sk);
+        if (a <= 0) continue;
+        var sx = sk.x + cl.offsetX;
+        var sy = sk.y + cl.offsetY;
+        if (!sk.drip) {
+          o = putCapsule(o, sx, sy, sy, sk.r, sk.r, a, aaPad);
+          continue;
+        }
+        var neck = sk.r * 0.5;
+        var g = sk.len > 0 ? (sk.y - sk.y0) / sk.len : 1;
+        var y0 = sk.y0 + cl.offsetY;
+        for (var i = 0; i < DRIP_SEGS; i++) {
+          var ua = i / DRIP_SEGS;
+          var ub = (i + 1) / DRIP_SEGS;
+          o = putCapsule(o, sx, y0 + (sy - y0) * ua, y0 + (sy - y0) * ub,
+            neck * dripProfile(ua, g), neck * dripProfile(ub, g), a, aaPad);
         }
       }
-      return n * 6;
+      return o / FLOATS;
     }
 
     function drawSegments(count, halfWidth, swell, inkMix) {
@@ -742,6 +752,8 @@
       gl.vertexAttribPointer(sLoc.meta, 4, gl.FLOAT, false, stride, 24);
       gl.enableVertexAttribArray(sLoc.ink);
       gl.vertexAttribPointer(sLoc.ink, 2, gl.FLOAT, false, stride, 40);
+      gl.enableVertexAttribArray(sLoc.vAlpha);
+      gl.vertexAttribPointer(sLoc.vAlpha, 1, gl.FLOAT, false, stride, 48);
       gl.drawArrays(gl.TRIANGLES, 0, count);
     }
 
@@ -778,33 +790,20 @@
           // Thin offset echo line gives the doubled crayon edge.
           gl.uniform1f(sLoc.alpha, cl.alpha * 0.45);
           drawSegments(buildSegments(ECHO_WIDTH / 2, 3, -2), ECHO_WIDTH / 2);
-          var specks = cl.specks || [];
-          for (var s = 0; s < specks.length; s++) {
-            var sk = specks[s];
-            var sx = sk.x + cl.offsetX;
-            var sy = sk.y + cl.offsetY;
-            gl.uniform1f(sLoc.alpha, speckAlpha(sk));
-            if (sk.drip) {
-              var neck = sk.r * 0.5;
-              var grown = sk.len > 0 ? (sk.y - sk.y0) / sk.len : 1;
-              drawSegments(buildDrip(sx, sk.y0 + cl.offsetY, sy, neck, grown), neck, 1, 0);
-            } else {
-              drawSegments(buildDot(sx, sy, sk.r), sk.r);
-            }
-          }
+          gl.uniform1f(sLoc.alpha, 1);
+          drawSegments(buildSpecks(cl), 1, 1, 0);
         }
 
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         gl.disable(gl.BLEND);
         gl.blendEquation(gl.FUNC_ADD);
         gl.useProgram(compProg);
-        gl.uniform2f(gl.getUniformLocation(compProg, 'uRes'), canvas.width, canvas.height);
-        gl.uniform1f(gl.getUniformLocation(compProg, 'uDpr'), view.dpr);
-        gl.uniform3f(gl.getUniformLocation(compProg, 'uMouse'), pointer.cssX, pointer.cssY, pointer.amount);
+        gl.uniform2f(cLoc.res, canvas.width, canvas.height);
+        gl.uniform1f(cLoc.dpr, view.dpr);
+        gl.uniform3f(cLoc.mouse, pointer.cssX, pointer.cssY, pointer.amount);
         for (var k = 0; k < layers.length; k++) {
           gl.activeTexture(gl.TEXTURE0 + k);
           gl.bindTexture(gl.TEXTURE_2D, layers[k].tex);
-          gl.uniform1i(gl.getUniformLocation(compProg, 'uL' + k), k);
         }
         gl.bindBuffer(gl.ARRAY_BUFFER, quad);
         gl.enableVertexAttribArray(cPos);
