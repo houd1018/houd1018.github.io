@@ -72,7 +72,7 @@
   // ------------------------------------------------------------------ view & input
 
   var view = { scale: 1, ox: 0, oy: 0, dpr: 1, w: 0, h: 0 };
-  var pointer = { x: -1e4, y: -1e4, vx: 0, vy: 0, active: false, cssX: 0, cssY: 0, amount: 0, lightX: 0, lightY: 0 };
+  var pointer = { x: -1e4, y: -1e4, vx: 0, vy: 0, active: false, cssX: 0, cssY: 0, amount: 0 };
   var target = { x: 0, y: 0 };
   var smooth = { x: 0, y: 0 };
   var renderer = null;
@@ -118,9 +118,6 @@
     }
     pointer.x = dx;
     pointer.y = dy;
-    // Light keeps its last position when the pointer leaves, so it can fade out in place.
-    pointer.lightX = dx;
-    pointer.lightY = dy;
     pointer.cssX = e.clientX - rect.left;
     pointer.cssY = e.clientY - rect.top;
     pointer.active = true;
@@ -301,7 +298,6 @@
     'uniform float uSeed;',
     'uniform float uHalf;',
     'uniform float uAA;',
-    'uniform vec3 uLight;',
     'varying vec2 vP;',
     'varying vec4 vSeg;',
     'varying vec4 vMeta;',
@@ -315,26 +311,15 @@
     '  float t = clamp(dot(vP - a, ab) / max(dot(ab, ab), 1e-6), 0.0, 1.0);',
     '  float d = length(vP - a - ab * t);',
     '  if (d > uHalf + uAA) discard;',
+    '  float v = d / uHalf;',
     '  float edge = 1.0 - smoothstep(uHalf - uAA, uHalf + uAA, d);',
-    // Shade from the signed offset across the stroke (not the round-cap distance), so joints stay seamless.
-    '  vec2 perp = normalize(vec2(-ab.y, ab.x) + vec2(1e-6, 0.0));',
-    '  float across = clamp(dot(vP - a, perp) / uHalf, -1.0, 1.0);',
-    '  float tube = sqrt(max(0.0, 1.0 - across * across));',
+    '  float tube = sqrt(max(0.0, 1.0 - v * v));',
     '  float along = mix(vMeta.x, vMeta.y, t);',
     '  float depth = 0.5 + 0.5 * mix(vMeta.z, vMeta.w, t);',
     // Gentle density variation along the stroke (no speckles).
-    '  float grain = mix(0.85, 1.0, noise(vec2(along * 0.12, uSeed)));',
+    '  float grain = mix(0.85, 1.0, noise(vec2(along * 0.9, uSeed)));',
     '  float alpha = uAlpha * edge * grain * mix(0.75, 1.0, depth);',
     '  vec3 col = min(uColor * mix(0.85, 1.1, tube) * mix(0.85, 1.0, depth), 1.0);',
-    // Cursor acts as a point light hovering above the page; strokes are lit as round tubes.
-    '  vec3 normal = normalize(vec3(perp * across, tube + 0.05));',
-    '  vec3 toLight = vec3(uLight.xy - vP, 70.0);',
-    '  float dist2 = dot(toLight.xy, toLight.xy);',
-    '  float atten = uLight.z * exp(-dist2 / (2.0 * 140.0 * 140.0));',
-    '  vec3 l = normalize(toLight);',
-    '  float diffuse = max(dot(normal, l), 0.0);',
-    '  float spec = pow(max(dot(normal, normalize(l + vec3(0.0, 0.0, 1.0))), 0.0), 28.0);',
-    '  col = min(col * (1.0 + 0.3 * diffuse * atten) + vec3(0.4) * spec * atten, 1.0);',
     '  gl_FragColor = vec4(col * alpha, alpha);',
     '}',
   ].join('\n');
@@ -378,14 +363,12 @@
     '  vec3 ink = h < 0.34 ? vec3(0.0, 0.682, 0.937) : (h < 0.67 ? vec3(0.925, 0.0, 0.549) : vec3(1.0, 0.949, 0.0));',
     '  vec3 col = mix(vec3(1.0), ink, smoothstep(0.1, 0.5, near));',
     '  float a = dotMask * mix(0.07, 0.55, near);',
-    '  vec4 dots = vec4(col * a, a);',
-    '  vec4 acc = vec4(0.0);',
+    '  vec4 acc = vec4(col * a, a);',
     '  acc = blend(acc, texture2D(uL0, vUv));',
     '  acc = blend(acc, texture2D(uL1, vUv));',
     '  acc = blend(acc, texture2D(uL2, vUv));',
     '  acc = blend(acc, texture2D(uL3, vUv));',
-    // Dots sit behind the strokes so they never speckle the lines.
-    '  gl_FragColor = acc + dots * (1.0 - smoothstep(0.0, 0.2, acc.a));',
+    '  gl_FragColor = acc;',
     '}',
   ].join('\n');
 
@@ -431,7 +414,6 @@
       seed: gl.getUniformLocation(strokeProg, 'uSeed'),
       half: gl.getUniformLocation(strokeProg, 'uHalf'),
       aa: gl.getUniformLocation(strokeProg, 'uAA'),
-      light: gl.getUniformLocation(strokeProg, 'uLight'),
     };
     var cPos = gl.getAttribLocation(compProg, 'aPos');
 
@@ -534,7 +516,6 @@
         gl.useProgram(strokeProg);
         gl.uniform4f(sLoc.view, view.scale, view.ox, view.oy, view.dpr);
         gl.uniform2f(sLoc.res, canvas.width, canvas.height);
-        gl.uniform3f(sLoc.light, pointer.lightX, pointer.lightY, pointer.amount);
         gl.enable(gl.BLEND);
         // Within one colour, overlapping loops keep the stronger coverage instead of stacking.
         if (maxBlend) {
