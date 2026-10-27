@@ -501,6 +501,59 @@ body.lightbox-open {
   font-size: 0.88rem;
 }
 
+/* ---------- Tabs ---------- */
+
+.tabs {
+  margin: 2em 0;
+}
+
+.tabs-list {
+  display: flex;
+  flex-wrap: wrap;
+  background: #f0f0f0;
+}
+
+.tabs-list [role="tab"] {
+  position: relative;
+  flex: 1 1 140px;
+  padding: 14px 16px;
+  border: 0;
+  background: none;
+  color: #3b3b3b;
+  font: inherit;
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: background-color 0.2s var(--ease), color 0.2s var(--ease);
+}
+
+.tabs-list [role="tab"]:hover {
+  background: #e4e4e4;
+}
+
+.tabs-list [role="tab"][aria-selected="true"] {
+  background: #444;
+  color: #fff;
+}
+
+.tabs-list [role="tab"][aria-selected="true"]::after {
+  content: "";
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  border: 8px solid transparent;
+  border-top-color: #444;
+  border-bottom: 0;
+  transform: translateX(-50%);
+}
+
+.tab-panel {
+  padding-top: 8px;
+}
+
+.tab-panel > h2:first-child {
+  margin-top: 1em;
+}
+
 /* ---------- Post navigation ---------- */
 
 .post-nav {

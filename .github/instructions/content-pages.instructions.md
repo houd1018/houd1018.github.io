@@ -140,6 +140,29 @@ Page skeleton (keep it identical across pages for easy bulk maintenance; copy an
 - All body images get `data-lightbox` by default (except logos/icons).
 - Meaningful `alt` is required; `loading="lazy"` is required (except above-the-fold covers).
 
+### Tabs (multi-part projects)
+
+```html
+<div class="tabs" data-tabs>
+  <div class="tabs-list" role="tablist">
+    <button type="button" role="tab" id="tab-rasterizer" aria-controls="rasterizer" aria-selected="true">Rasterizer</button>
+    <button type="button" role="tab" id="tab-pathtracer" aria-controls="pathtracer" aria-selected="false">Pathtracer</button>
+  </div>
+  <section class="tab-panel" role="tabpanel" id="rasterizer" aria-labelledby="tab-rasterizer"><h2>Rasterizer</h2> … </section>
+  <section class="tab-panel" role="tabpanel" id="pathtracer" aria-labelledby="tab-pathtracer"><h2>Pathtracer</h2> … </section>
+</div>
+```
+
+- `js/content.js` wires it up (click, arrow keys, `#panel-id` deep links); without JS all panels show in order. Headings inside panels start at `h3`.
+
+### Link cards (sub-projects)
+
+```html
+<div class="link-cards">
+  <a class="link-card" href="sarapist.html"><img class="link-card-img" data-media-src="2023/10/Sarapist.jpg" alt="" loading="lazy" data-no-lightbox><span class="link-card-title">Sarapist</span><span class="link-card-text">BVW Round 1</span></a>
+</div>
+```
+
 ### Code blocks (Shader / C++ / C# / Python)
 
 ```html

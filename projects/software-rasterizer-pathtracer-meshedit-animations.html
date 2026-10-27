@@ -34,25 +34,32 @@
     <figure class="media-figure"><img data-media-src="2024/03/64869683.png" alt="64869683" loading="lazy"></figure>
     <p>This project is finished when I am taking <a href="http://15462.courses.cs.cmu.edu/spring2024/">Computer Graphics (Spring2024)</a> at Carnegie Mellon University as homework . The public repository for the basic framework is here: <a href="https://github.com/CMU-Graphics/Scotty3D">https://github.com/CMU-Graphics/Scotty3D</a></p>
     <p>Scotty3D is a 3D modeling, rendering, and animation package like Blender, but we will need to complete the main algorithms and functions such as Rasterization and Path-tracing rendering, MeshEdit operation, and Animations including Skeleton Kinematics and Skinning and Particle Simulation.</p>
-    <ul><li>Rasterizer</li><li>Pathtracer</li><li>MeshEdit</li><li>Animation</li></ul>
+    <div class="tabs" data-tabs>
+    <div class="tabs-list" role="tablist">
+    <button type="button" role="tab" id="tab-rasterizer" aria-controls="rasterizer" aria-selected="true">Rasterizer</button>
+    <button type="button" role="tab" id="tab-pathtracer" aria-controls="pathtracer" aria-selected="false">Pathtracer</button>
+    <button type="button" role="tab" id="tab-meshedit" aria-controls="meshedit" aria-selected="false">MeshEdit</button>
+    <button type="button" role="tab" id="tab-animation" aria-controls="animation" aria-selected="false">Animation</button>
+    </div>
+    <section class="tab-panel" role="tabpanel" id="rasterizer" aria-labelledby="tab-rasterizer">
     <h2>Rasterizer</h2>
     <figure>
     <figure class="media-figure"><img data-media-src="2024/03/rasterize_image.png" alt="rasterize image" loading="lazy"></figure>
     <figcaption>Final result: Girl with a Pearl Earring rendered with rasterizer.</figcaption></figure>
-    <p>For Assignment 1 – Rasterizer, we are supposed to implement what Modern GPUs do in a Rasterization Pipeline, which has several highly parallel stages to converting 3D triangles into 2D pixels. Instead of rendering with GPU, we implement this pipeline in software using CPU to render things.</p>
+    <p>For Assignment 1 - Rasterizer, we are supposed to implement what Modern GPUs do in a Rasterization Pipeline, which has several highly parallel stages to converting 3D triangles into 2D pixels. Instead of rendering with GPU, we implement this pipeline in software using CPU to render things.</p>
     <p><br></p>
     <p>obj file is from the model I made before. This is the stylized model from the painting <em>Girl with a Pearl Earring</em> by Johannes Vermeer.</p>
     <figure class="media-figure"><img data-media-src="2024/03/8bd741_05409708afb447d3aa167563d2fa7bddmv2.png" alt="8bd741 05409708afb447d3aa167563d2fa7bddmv2" loading="lazy"></figure>
     <p><strong>Scene Functions</strong></p>
-    <ul><li><p>Implemented local_to_world() and world_to_local() functions to get the transformation(4×4 matrix) from object space all the way to / from world space with scaling, rotation, and translation.</p>
+    <ul><li><p>Implemented local_to_world() and world_to_local() functions to get the transformation(4x4 matrix) from object space all the way to / from world space with scaling, rotation, and translation.</p>
     </li></ul>
     <figure>
     <figure class="media-figure"><img data-media-src="2024/03/8bd741_4d16530093f8455381fa7f1d383fc09cmv2.png" alt="8bd741 4d16530093f8455381fa7f1d383fc09cmv2" loading="lazy"></figure>
     <figcaption>1. Line rasterize 2.Flat triangle 3.Smooth triangle 4. Perspective-correct triangle</figcaption></figure>
     <p><strong>Lines, Triangles Rasterization, and Triangles Interpolations</strong></p>
-    <ul><li><p>Implemented Line rasterization algorithm using diamond exit rules and Bresenham’s line algorithm.</p>
-    </li><li><p>Achieved Triangle rasterization algorithm(flat triangle) following first doing a bounding box test(to define the triangle area) then performing point-in-triangle tests and top-left rule to decide whether a fragment should be drawn or not.</p>
-    </li><li><p>Realized another 2 different Triangle rasterization algorithms with the interpolation in screen-space triangles and perspective-correct triangles.</p>
+    <ul><li><p>Implemented Line rasterization algorithm using <a href="https://registry.khronos.org/OpenGL/specs/gl/glspec33.core.pdf#page=126&amp;zoom=100,168,674">diamond exit rules</a> and <a href="http://15462.courses.cs.cmu.edu/spring2024/lecture/persp/slide_029">Bresenham's line algorithm</a>.</p>
+    </li><li><p>Achieved Triangle rasterization algorithm(flat triangle) following first doing a <a href="http://15462.courses.cs.cmu.edu/spring2024/lecture/persp/slide_037">bounding box test</a>(to define the triangle area) then performing <a href="http://15462.courses.cs.cmu.edu/spring2024/lecture/persp/slide_042">point-in-triangle tests</a> and <a href="https://learn.microsoft.com/en-us/windows/win32/direct3d11/d3d10-graphics-programming-guide-rasterizer-stage-rules">top-left rule</a> to decide whether a fragment should be drawn or not.</p>
+    </li><li><p>Realized another 2 different Triangle rasterization algorithms with the interpolation in <a href="http://15462.courses.cs.cmu.edu/spring2024/lecture/texture/slide_004">screen-space triangles</a> and <a href="http://15462.courses.cs.cmu.edu/spring2024/lecture/texture/slide_008">perspective-correct triangles</a> with barycentric coordinates.</p>
     </li></ul>
     <figure>
     <figure class="media-figure"><img data-media-src="2024/03/8bd741_55d8db1bd25d448f922cb9a2d33c09fdmv2.png" alt="8bd741 55d8db1bd25d448f922cb9a2d33c09fdmv2" loading="lazy"></figure>
@@ -60,7 +67,7 @@
     <figure>
     <figure class="media-figure"><img data-media-src="2024/03/8bd741_e62142e2e81f438d9cf576b013470951mv2.png" alt="8bd741 e62142e2e81f438d9cf576b013470951mv2" loading="lazy"></figure>
     <figcaption>After</figcaption></figure>
-    <p><strong>Lines, Triangles Rasterization, and Triangles Interpolations</strong></p>
+    <p><strong>Depth Test and Color Blend</strong></p>
     <ul><li><p>Implemented Depth test function Depth_Less() and Blending function Blend_Add() and Blend_Over()(alpha blending).</p>
     </li></ul>
     <figure>
@@ -70,7 +77,7 @@
     <figure class="media-figure"><img data-media-src="2024/03/屏幕截图-2024-03-14-224222.jpg" alt="屏幕截图 2024 03 14 224222" loading="lazy"></figure>
     <figcaption>Mip-Mapping</figcaption></figure>
     <p><strong>Mip-Mapping and Texture sampling</strong></p>
-    <ul><li>Implemented mipmap generation, sampling, and lod determination from derivatives, according to section 3.8.11 of <a href="https://registry.khronos.org/OpenGL/specs/gl/glspec33.core.pdf">glspec33.core.pdf</a>.</li><li>Implemented nearest, bilinear, trilinear sampling strategy.</li></ul>
+    <ul><li>Implemented mipmap generation, sampling, and<a href="http://15462.courses.cs.cmu.edu/spring2024/lecture/texture/slide_037"> lod determination</a> from derivatives, according to section 3.8.11 of <a href="https://registry.khronos.org/OpenGL/specs/gl/glspec33.core.pdf">glspec33.core.pdf</a>.</li><li>Implemented nearest and bilinear for <a href="http://15462.courses.cs.cmu.edu/spring2024/lecture/texture/slide_024">Magnification</a> , trilinear sampling for minification.</li></ul>
     <ul></ul>
     <figure>
     <figure class="media-figure"><img data-media-src="2024/03/before.png" alt="before" loading="lazy"></figure>
@@ -78,9 +85,10 @@
     <figure>
     <figure class="media-figure"><img data-media-src="2024/03/after.png" alt="after" loading="lazy"></figure>
     <figcaption>after 8x8 SSAA</figcaption></figure>
-    <p><strong>Supersampling</strong></p>
+    <p><a href="http://15462.courses.cs.cmu.edu/spring2024/lecture/persp/slide_063">Supersampling</a></p>
     <ul><li>Implemented a framebuffer to store new index points within one pixel sample point(x,y) and to resolve the pixel color into a weighted average of these new points. and then generate new fragments for these new sample points.</li></ul>
-    <h2>Pathtracer</h2>
+    </section>
+    <section class="tab-panel" role="tabpanel" id="pathtracer" aria-labelledby="tab-pathtracer">
     <h2>Pathtracer</h2>
     <div class="media-video"><video controls playsinline preload="metadata" data-media-src="2024/03/2024-03-24-16-34-15.mp4"></video></div>
     <p><strong>Camera Rays</strong></p>
@@ -121,7 +129,8 @@
     <p><strong>Environment Lighting</strong></p>
     <ul><li>Realized a new type of light source: an infinite environment light. Importance sampling an HDR environment map, and then calculating for the Jacobian for transforming the PDF from the HDR map sampling distribution to the unit sphere.</li></ul>
     <figure class="media-figure"><img data-media-src="2024/03/env_light_sampling_jacobian_diagram.jpg" alt="env light sampling jacobian diagram" loading="lazy"></figure>
-    <h2>MeshEdit</h2>
+    </section>
+    <section class="tab-panel" role="tabpanel" id="meshedit" aria-labelledby="tab-meshedit">
     <h2>MeshEdit</h2>
     <figure>
     <figure class="media-figure"><img data-media-src="2024/03/halfedge-mesh-data.png" alt="halfedge mesh data" loading="lazy"></figure>
@@ -129,7 +138,7 @@
     <figure class="media-figure"><img data-media-src="2024/03/halfedge-mesh-halfedge-connectivity.png" alt="halfedge mesh halfedge connectivity" loading="lazy"></figure>
     <p>MeshEdit operations use a pointer-based structure, Halfedge_Mesh operations will often require the allocation and deallocation of new elements. more details can be seen <a href="https://github.com/CMU-Graphics/Scotty3D/blob/main/assignments/A2/halfedge.md">here</a>.</p>
     <p>To be short, we use Halfedge, a Linked-list-like structure to move around the mesh and grab the element we want.</p>
-    <h2>Local operations</h2>
+    <h3>Local operations</h3>
     <p>Flip Edge</p>
     <div class="media-video"><video controls playsinline preload="metadata" data-media-src="2024/03/edge_flip.mp4"></video></div>
     <p>Split Edge</p>
@@ -138,7 +147,7 @@
     <div class="media-video"><video controls playsinline preload="metadata" data-media-src="2024/03/collapse_edge.mp4"></video></div>
     <p>Extrude Face</p>
     <div class="media-video"><video controls playsinline preload="metadata" data-media-src="2024/03/face_bevel.mp4"></video></div>
-    <h2>Global operations</h2>
+    <h3>Global operations</h3>
     <p>Triangulate</p>
     <div class="media-video"><video controls playsinline preload="metadata" data-media-src="2024/03/triangulate.mp4"></video></div>
     <p>Linear Subdivision</p>
@@ -147,7 +156,8 @@
     <div class="media-video"><video controls playsinline preload="metadata" data-media-src="2024/03/catmull_subd.mp4"></video></div>
     <p>Loop Subdivision</p>
     <div class="media-video"><video controls playsinline preload="metadata" data-media-src="2024/03/loop_subd.mp4"></video></div>
-    <h2>Animation</h2>
+    </section>
+    <section class="tab-panel" role="tabpanel" id="animation" aria-labelledby="tab-animation">
     <h2>Animation</h2>
     <div class="media-video"><video controls playsinline preload="metadata" data-media-src="2024/03/2024-04-17-00-03-55.mp4"></video></div>
     <figure class="media-figure"><img data-media-src="2024/03/微信截图_20240414152717.jpg" alt="微信截图 20240414152717" loading="lazy"></figure>
@@ -163,6 +173,8 @@
     <p><a href="https://github.com/CMU-Graphics/Scotty3D/blob/main/assignments/A4/T4-particles.md">Particle Simulation</a></p>
     <ul><li><p>Used the simplest -- <a href="http://15462.courses.cs.cmu.edu/spring2024/lecture/sim1/slide_029">forward Euler</a></p>
     </li></ul>
+    </section>
+    </div>
     <p class="back-link"><a href="index.html">&larr; All projects</a></p>
   </main>
 

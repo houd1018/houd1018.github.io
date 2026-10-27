@@ -542,9 +542,9 @@ def strip_tags(s: str) -> str:
     return clean_title(re.sub(r"<[^>]+>", " ", s or ""))
 
 
-def elementor_tabs(item: ET.Element) -> List[Tuple[str, str]]:
-    """Return [(tab title, template id)] for Essential Addons tabs that load Elementor templates."""
-    tabs: List[Tuple[str, str]] = []
+def elementor_widgets(item: ET.Element, widget_type: str) -> List[Dict]:
+    """Return the settings of every Elementor widget of the given type, in document order."""
+    found: List[Dict] = []
     for meta in item.findall("wp:postmeta", NS):
         if text(meta, "wp:meta_key") != "_elementor_data":
             continue
@@ -555,11 +555,8 @@ def elementor_tabs(item: ET.Element) -> List[Tuple[str, str]]:
 
         def walk(n: object) -> None:
             if isinstance(n, dict):
-                if n.get("widgetType") == "eael-adv-tabs":
-                    for t in n.get("settings", {}).get("eael_adv_tabs_tab", []):
-                        tpl = str(t.get("eael_primary_templates") or "")
-                        if t.get("eael_adv_tabs_text_type") == "template" and tpl:
-                            tabs.append((clean_title(t.get("eael_adv_tabs_tab_title", "")), tpl))
+                if n.get("widgetType") == widget_type and isinstance(n.get("settings"), dict):
+                    found.append(n["settings"])
                 for v in n.values():
                     walk(v)
             elif isinstance(n, list):
@@ -567,22 +564,128 @@ def elementor_tabs(item: ET.Element) -> List[Tuple[str, str]]:
                     walk(v)
 
         walk(data)
+    return found
+
+
+def elementor_tabs(item: ET.Element) -> List[Tuple[str, str]]:
+    """Return [(tab title, template id)] for Essential Addons tabs that load Elementor templates."""
+    tabs: List[Tuple[str, str]] = []
+    for settings in elementor_widgets(item, "eael-adv-tabs"):
+        for t in settings.get("eael_adv_tabs_tab", []):
+            tpl = str(t.get("eael_primary_templates") or "")
+            if t.get("eael_adv_tabs_text_type") == "template" and tpl:
+                tabs.append((clean_title(t.get("eael_adv_tabs_tab_title", "")), tpl))
     return tabs
 
 
-def inject_tab_templates(body: str, tabs: List[Tuple[str, str]], templates: Dict[str, str]) -> Tuple[str, List[str]]:
-    """Fill empty tab sections (a heading followed directly by another heading or the end) with template bodies."""
-    injected: List[str] = []
-    for title, tpl_id in tabs:
-        tpl_body = templates.get(tpl_id)
-        if not tpl_body:
+def cut_at_line(body: str, needle: str) -> Optional[str]:
+    """Return the body up to (not including) the first line containing needle, or None."""
+    lines = body.split("\n")
+    for i, line in enumerate(lines):
+        if needle in line:
+            if i > 0 and lines[i - 1].startswith(('<div class="link-cards"', "<ul>")) and needle not in lines[i - 1]:
+                i -= 1
+            return "\n".join(lines[:i])
+    return None
+
+
+def build_tabs(body: str, tabs: List[Tuple[str, str]], templates: Dict[str, str]) -> Tuple[str, int]:
+    """Replace the rendered tab widget (always the last widget on these pages) with accessible tabs."""
+    panels = [(title, templates[tpl]) for title, tpl in tabs if templates.get(tpl)]
+    if not panels:
+        return body, 0
+    # Panel title is the h2, so demote headings inside panels one level.
+    panels = [(t, re.sub(r"<(/?)h([23])>", lambda m: f"<{m.group(1)}h{int(m.group(2)) + 1}>", b)) for t, b in panels]
+    prefix = cut_at_line(body, f"<li>{html.escape(panels[0][0], quote=False)}</li>")
+    if prefix is None:
+        prefix = body
+    used: Set[str] = set()
+    buttons, sections = [], []
+    for i, (title, panel_body) in enumerate(panels):
+        tab_id = re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-") or f"tab-{i + 1}"
+        while tab_id in used:
+            tab_id += "-x"
+        used.add(tab_id)
+        label = html.escape(title, quote=False)
+        selected = "true" if i == 0 else "false"
+        buttons.append(
+            f'<button type="button" role="tab" id="tab-{tab_id}" aria-controls="{tab_id}" aria-selected="{selected}">{label}</button>'
+        )
+        own_heading = f"<h3>{label}</h3>"
+        if panel_body.startswith(own_heading):
+            panel_body = panel_body[len(own_heading):].lstrip("\n")
+        sections.append(
+            f'<section class="tab-panel" role="tabpanel" id="{tab_id}" aria-labelledby="tab-{tab_id}">\n'
+            f"<h2>{label}</h2>\n{panel_body}\n</section>"
+        )
+    tabs_html = (
+        '<div class="tabs" data-tabs>\n<div class="tabs-list" role="tablist">\n'
+        + "\n".join(buttons)
+        + "\n</div>\n"
+        + "\n".join(sections)
+        + "\n</div>"
+    )
+    return (prefix + "\n" + tabs_html).strip("\n"), len(panels)
+
+
+def build_accordion_cards(
+    body: str, item: ET.Element, media: "MediaResolver", linker: "Linker"
+) -> Tuple[str, int]:
+    """Replace a rendered image accordion with link cards (page links) or a lightbox grid (image links)."""
+    entries: List[Dict] = []
+    for settings in elementor_widgets(item, "eael-image-accordion"):
+        entries.extend(settings.get("eael_img_accordions", []))
+    if not entries:
+        return body, 0
+
+    keys: List[str] = []
+    cards: List[str] = []
+    figures: List[str] = []
+    for e in entries:
+        title = clean_title(e.get("eael_accordion_tittle", ""))
+        desc = strip_tags(e.get("eael_accordion_content", ""))
+        link = (e.get("eael_accordion_title_link") or {}).get("url", "")
+        href, is_media = linker.rewrite(link) if link else ("", False)
+        img = media.resolve((e.get("eael_accordion_bg") or {}).get("url", ""))
+        if is_media:
+            target = media.resolve(link) or img
+            keys.append(f'data-media-href="{html.escape(target or "", quote=True)}"')
+            caption = f"<figcaption>{html.escape(title, quote=False)}</figcaption>" if title else ""
+            alt = html.escape(title or re.sub(r"[-_.]+", " ", Path(target or "").stem), quote=True)
+            figures.append(f'<figure><img data-media-src="{html.escape(target or "", quote=True)}" alt="{alt}" loading="lazy">{caption}</figure>')
             continue
-        pattern = re.compile(rf"(<h2>{re.escape(html.escape(title, quote=False))}</h2>)\n(?=<h2>|$)", re.IGNORECASE)
-        padded = body + "\n"
-        if pattern.search(padded):
-            body = pattern.sub(lambda m: m.group(1) + "\n" + tpl_body + "\n", padded, count=1).rstrip("\n")
-            injected.append(title)
-    return body, injected
+        keys.append(f'href="{html.escape(href, quote=True)}"')
+        parts = [f'<a class="link-card" href="{html.escape(href, quote=True)}">']
+        if img:
+            parts.append(
+                f'<img class="link-card-img" data-media-src="{html.escape(img, quote=True)}" alt="" loading="lazy" data-no-lightbox>'
+            )
+        parts.append(f'<span class="link-card-title">{html.escape(title, quote=False)}</span>')
+        if desc:
+            parts.append(f'<span class="link-card-text">{html.escape(desc, quote=False)}</span>')
+        parts.append("</a>")
+        cards.append("".join(parts))
+
+    block = []
+    if figures:
+        cols = 2 if len(figures) in (2, 4) else 3
+        block.append(f'<div class="gif-grid gif-grid--{cols}">\n' + "\n".join(figures) + "\n</div>")
+    if cards:
+        block.append('<div class="link-cards">\n' + "\n".join(cards) + "\n</div>")
+
+    # Replace the lines where the accordion was rendered.
+    lines = body.split("\n")
+    hits = [i for i, line in enumerate(lines) if any(k in line for k in keys)]
+    if not hits:
+        return (body + "\n" + "\n".join(block)).strip("\n"), len(entries)
+    start, end = min(hits), max(hits)
+    if start > 0 and lines[start - 1].startswith('<div class="link-cards"'):
+        start -= 1
+        if end + 1 < len(lines) and lines[end + 1] == "</div>":
+            end += 1
+    while end + 1 < len(lines) and lines[end + 1].strip() == "</p>":
+        end += 1
+    return "\n".join(lines[:start] + block + lines[end + 1 :]), len(entries)
 
 
 def main(argv: Optional[List[str]] = None) -> int:
@@ -674,9 +777,10 @@ def main(argv: Optional[List[str]] = None) -> int:
             continue
         slug = page_slugs[name.lower()]
         body, stats = convert(text(it, "content:encoded"))
-        body, injected = inject_tab_templates(body, elementor_tabs(it), templates)
-        if injected:
-            stats = dict(stats, videos=body.count("<video"), images=body.count("<img "), tabs=len(injected))
+        body, n_tabs = build_tabs(body, elementor_tabs(it), templates)
+        body, n_cards = build_accordion_cards(body, it, media, linker)
+        if n_tabs or n_cards:
+            stats = dict(stats, videos=body.count("<video"), images=body.count("<img "), tabs=n_tabs, cards=n_cards)
 
         project = by_slug.get(slug)
         if not project:
@@ -702,7 +806,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             continue
         print(f"{status} projects/{slug}.html  [{project['category']}{'' if slug in listed else ', unlisted'}]  "
               f"img={stats['images']} video={stats['videos']} embed={stats['embeds']}"
-              + (f" tabs+={len(injected)}" if injected else ""))
+              + (f" tabs={n_tabs}" if n_tabs else "") + (f" cards={n_cards}" if n_cards else ""))
         if not args.dry_run and (args.force or not exists):
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(render_page(project, body, None), encoding="utf-8", newline="\n")

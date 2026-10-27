@@ -16,7 +16,7 @@ Script: [scripts/migrate_wp_subpages.py](../../../scripts/migrate_wp_subpages.py
 How it works:
 - Grid order, categories, subtitles and covers come from the Essential Addons filterable gallery on the WP home page (`_elementor_data`). Other published pages become `listed: false` sub-pages (`UNLISTED_CATEGORIES`).
 - Bodies come from `content:encoded`, rebuilt with an allowlist: media → `data-media-*` master paths, bare video URLs → `.media-video`, image runs → `gif-grid`, image-accordion links → `.link-cards`, old `dazhou.io` / `houd1018.github.io/posts/...` links → new URLs.
-- Empty Elementor tab panels are filled from `elementor_library` templates.
+- Essential Addons tabs (`eael-adv-tabs`, Software Rasterizer / Shader Practice) become accessible `.tabs` built from their `elementor_library` templates; image accordions (`eael-image-accordion`, Game Jams / BVW) become `.link-cards`, or a lightbox `gif-grid` when they link to images.
 - Hand-picked fixes: `SLUG_OVERRIDES`, `UNLISTED_CATEGORIES`, `TEXT_FIXES`.
 
 Run:

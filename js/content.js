@@ -61,12 +61,66 @@
     }
   }
 
+  function initTabs(root) {
+    var groups = root.querySelectorAll('[data-tabs]');
+    for (var g = 0; g < groups.length; g++) setupTabs(groups[g]);
+  }
+
+  function setupTabs(group) {
+    if (group.hasAttribute('data-tabs-ready')) return;
+    group.setAttribute('data-tabs-ready', '');
+    var tabs = Array.prototype.slice.call(group.querySelectorAll('[role="tab"]'));
+    var panels = tabs.map(function (tab) {
+      return doc.getElementById(tab.getAttribute('aria-controls'));
+    });
+
+    function select(index, focus) {
+      tabs.forEach(function (tab, i) {
+        var active = i === index;
+        tab.setAttribute('aria-selected', String(active));
+        tab.tabIndex = active ? 0 : -1;
+        if (panels[i]) panels[i].hidden = !active;
+      });
+      if (focus) tabs[index].focus();
+    }
+
+    tabs.forEach(function (tab, i) {
+      tab.addEventListener('click', function () {
+        select(i, false);
+        if (global.history.replaceState) global.history.replaceState(null, '', '#' + tab.getAttribute('aria-controls'));
+      });
+      tab.addEventListener('keydown', function (e) {
+        var next = null;
+        if (e.key === 'ArrowRight') next = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') next = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') next = 0;
+        else if (e.key === 'End') next = tabs.length - 1;
+        if (next !== null) {
+          e.preventDefault();
+          select(next, true);
+        }
+      });
+    });
+
+    // Open the tab named in the URL hash, or the one containing the hash target.
+    var initial = 0;
+    var hash = decodeURIComponent((global.location.hash || '').slice(1));
+    var target = hash && doc.getElementById(hash);
+    if (target) {
+      panels.forEach(function (panel, i) {
+        if (panel && (panel === target || panel.contains(target))) initial = i;
+      });
+    }
+    select(initial, false);
+  }
+
   function enhance(root) {
     if (!root) return;
     if (global.SiteConfig) global.SiteConfig.hydrateMedia(root);
     enhanceImages(root);
     highlight(root);
     enhanceLinks(root);
+    initTabs(root);
   }
 
   global.SiteContent = Object.freeze({

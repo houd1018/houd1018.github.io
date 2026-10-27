@@ -140,6 +140,7 @@ window.PROJECTS = [
     title: "ISA Media",
     category: "creative-coding",
     date: "2022-08-24",
+    cover: "2022/08/mp.weixin.qq_.com_s_etyDHDkuJxI5d59QOLuseQ.png",
     listed: false,
   },
   {
