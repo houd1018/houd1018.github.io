@@ -1,5 +1,5 @@
 ---
-applyTo: "projects/**,blog/**,data/**"
+applyTo: "projects/**,professional/**,blog/**,data/**"
 description: "Layout and media rules for project detail pages, blog posts, and data indexes"
 ---
 
@@ -109,6 +109,14 @@ Text explaining the feature.
 | `![title](youtube:ID)`, `bilibili:BV…`, `vimeo:ID` | embedded player (youtube-nocookie) |
 
 Raw HTML components from section 3 still work inside the Markdown (sanitized; `data-media-*` attributes are hydrated).
+
+### Professional title pages `professional/content/<slug>.md`
+
+- Titles live in `data/professional.js` (`slug, title, year, status, focus, trailer` YouTube id, optional `cover`), newest first; shells come from the same `scripts/build_project_pages.py`.
+- Same blocks as projects, plus one `:::contribution tag, tag | also: other-title-slug` block per contribution: `###` heading (becomes the anchor id), short problem / approach / impact text, media. Tags (`tool`, `shader`, `vfx`, `procedural`, `pipeline`, …) render as chips and drive the category filter (shown when there are ≥ 2 contributions and ≥ 2 tags).
+- A tool used by several titles is written once, under the title where it was developed; `also:` links the other titles.
+- Grid highlight: a `data/projects.js` entry with `from: "<title-slug>"` gets a title badge; `url: "professional/<slug>.html#<contribution-id>"` (site-relative URLs open in the same tab).
+- Only use footage and facts that are already public or approved by the studio.
 
 ## 3. HTML components (blog posts, raw HTML in Markdown)
 

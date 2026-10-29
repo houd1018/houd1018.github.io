@@ -35,7 +35,7 @@ jobs:
       - name: Assemble site
         run: |
           mkdir -p _site
-          for p in index.html 404.html config.js .nojekyll css js data projects blog assets/img; do
+          for p in index.html 404.html config.js .nojekyll css js data projects professional blog assets/img; do
             if [ -e "$p" ]; then cp -r --parents "$p" _site/; fi
           done
           ls -la _site

@@ -18,14 +18,19 @@
     return node;
   }
 
+  function isExternal(p) {
+    return !!p.url && /^https?:\/\//i.test(p.url);
+  }
+
   function projectHref(p) {
-    return p.url || global.SiteConfig.siteUrl('projects/' + p.slug + '.html');
+    if (p.url) return isExternal(p) ? p.url : global.SiteConfig.siteUrl(p.url);
+    return global.SiteConfig.siteUrl('projects/' + p.slug + '.html');
   }
 
   function renderCard(p) {
     var card = el('a', 'work-card');
     card.href = projectHref(p);
-    if (p.url) {
+    if (isExternal(p)) {
       card.target = '_blank';
       card.rel = 'noopener noreferrer';
     }
@@ -70,6 +75,14 @@
       }
     }
     card.appendChild(thumb);
+
+    // `from: "<title-slug>"` marks a professional contribution; label it with the game title.
+    if (p.from) {
+      var titles = global.PROFESSIONAL || [];
+      var from = null;
+      for (var t = 0; t < titles.length; t++) if (titles[t].slug === p.from) from = titles[t];
+      thumb.appendChild(el('span', 'work-card-from', from ? from.title : p.from));
+    }
 
     var info = el('div', 'work-card-info');
     info.appendChild(el('h3', 'work-card-title', p.title));

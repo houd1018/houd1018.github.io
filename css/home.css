@@ -392,6 +392,114 @@
   font-size: 0.9rem;
 }
 
+/* Professional contribution shown in the project grid. */
+.work-card-from {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(17, 17, 17, 0.78);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+/* ---------- Professional (game titles) ---------- */
+
+.titles-grid {
+  display: grid;
+  gap: 26px;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 760px) {
+  .titles-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.title-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--card-bg);
+  color: inherit;
+  text-decoration: none;
+  transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease);
+}
+
+.title-card:hover,
+.title-card:focus-visible {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+}
+
+.title-card-thumb {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: #1c1c1c;
+}
+
+.title-card-thumb img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s var(--ease);
+}
+
+.title-card:hover .title-card-thumb img {
+  transform: scale(1.04);
+}
+
+.title-card-status {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.title-card-info {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px 16px;
+  align-items: baseline;
+  padding: 18px 18px 22px;
+}
+
+.title-card-title {
+  margin: 0;
+  color: var(--accent);
+  font-size: 1.35rem;
+  font-weight: 500;
+}
+
+.title-card-year {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.title-card-focus {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #3b3b3b;
+  font-size: 0.92rem;
+}
+
 /* ---------- Contact ---------- */
 
 .contact {

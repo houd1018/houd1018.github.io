@@ -32,3 +32,7 @@ Follow [content page rules](../../instructions/content-pages.instructions.md) an
 7. Run the checklist in the content rules, then commit (and push only if the user asks).
 
 Changing a title, subtitle or category in `data/projects.js` requires re-running `scripts/build_project_pages.py` so the shell matches.
+
+## Professional work (game titles)
+
+For work on shipped / in-development games, edit `data/professional.js` and `professional/content/<slug>.md` instead (one `:::contribution tags | also: other-title` block per tool, shader or effect; see section 2 of the content rules), then run the same build script. Ask which title a contribution was developed under; never publish unannounced or non-public details.

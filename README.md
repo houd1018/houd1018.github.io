@@ -11,6 +11,8 @@ A pure static site (HTML / CSS / vanilla JS, no build step). Code lives in this 
 |---|---|
 | `index.html` | Home: CMYK hero, About, project grid, latest posts, contact |
 | `projects/` | `index.html` (grid), `content/<slug>.md` (project content), `<slug>.html` (generated shells) |
+| `professional/` | One page per shipped game title: `content/<slug>.md` + generated `<slug>.html` |
+| `data/professional.js` | Game titles shown in the Professional section |
 | `blog/` | `index.html` (list), `post.html?slug=…` (renderer), `posts/<slug>.md` (post bodies) |
 | `data/projects.js` | Project index — order here = order in the grid |
 | `data/blog.js` | Blog index — newest first |
@@ -98,6 +100,25 @@ Open http://localhost:8000. Media loads from `cleaned_media/`; add `?media=remot
    Rows put text beside media and alternate sides; `:::tabs` with `:::tab Label` blocks and `:::cards` (link cards to sub-projects) are also available. Full reference: [content rules](.github/instructions/content-pages.instructions.md).
 4. Generate the page shell: `python scripts/build_project_pages.py --only my-shader` (re-run it whenever the title, subtitle or category changes).
 5. Preview at `http://localhost:8000/projects/my-shader.html`.
+
+## Add professional work (shipped game titles)
+
+1. Add the title to [data/professional.js](data/professional.js) (newest first): `slug`, `title`, `year`, `status` (`Shipped` / `In development`), `focus` (one line on the card), `trailer` (YouTube id), optional `cover` (key art from the media library; otherwise the trailer thumbnail is used).
+2. Write `professional/content/<slug>.md` with the same blocks as projects (see [battlefield-6.md](professional/content/battlefield-6.md)). Each contribution is one block:
+   ```md
+   :::contribution tool, procedural | also: battlefield-2042
+   ### Vegetation Houdini Tools
+   What it does, what I did, the impact.
+
+   ![Tool UI](media:professional/battlefield-6/veg-ui.png)
+   ![Result](media:professional/battlefield-6/veg.mp4#loop)
+   :::
+   ```
+   Tags (`tool`, `shader`, `vfx`, `procedural`, `pipeline`, …) become the filter chips on the page. Write a shared tool once, under the title where it was developed, and list the other titles after `also:`.
+3. Run `python scripts/build_project_pages.py --only <slug>`.
+4. Optional: to feature a contribution in the project grid, add a normal entry to `data/projects.js` with `from: "<title-slug>"` (shows a badge) and `url: "professional/<slug>.html#<contribution-id>"` (the id is the contribution heading in kebab-case).
+
+Only publish footage and details your studio has made public.
 
 ## Add a blog post
 

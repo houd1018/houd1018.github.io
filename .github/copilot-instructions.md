@@ -9,7 +9,7 @@ The WordPress backend is retired; all content is maintained through VS Code Copi
 | What | Where |
 |---|---|
 | Code, pages, posts | this repo; deployed by `.github/workflows/pages-deploy.yml` on push to `main` (Settings → Pages → Source: GitHub Actions) |
-| Deploy artifact | allowlist only: `index.html config.js .nojekyll css js data projects blog assets/img`; the build fails if videos or files > 2 MB slip in |
+| Deploy artifact | allowlist only: `index.html config.js .nojekyll css js data projects professional blog assets/img`; the build fails if videos or files > 2 MB slip in |
 | Media | Cloudflare R2 bucket `houd1018-media`, public base `https://pub-af66391f274d47529898def605b4df9a.r2.dev/` (= `MEDIA_BASE_URL_REMOTE` in `config.js`) |
 | Local media mirror | `cleaned_media/` (git-ignored); local pages load media from here, add `?media=remote` to test R2 |
 | Upload tool | `rclone` remote `r2:` (user-configured; never ask for or print keys) |
@@ -52,6 +52,7 @@ css/                    base.css (tokens/nav/page-hero/filters/footer) home.css 
 js/                     hero-sketch.js projects-grid.js content.js lightbox.js blog.js project-page.js
 data/                   projects.js blog.js
 projects/               index.html + <slug>.html shells (generated) + content/<slug>.md (project content)
+professional/           <slug>.html shells (generated) + content/<slug>.md (one page per shipped game title)
 blog/                   index.html post.html posts/<slug>.md
 scripts/                build_project_pages.py clean_uploads.py migrate_wp_subpages.py migrate_blog_posts.py (Python 3.8+, stdlib only)
 assets/img/favicons/    small UI assets only
@@ -75,7 +76,8 @@ cleaned_media/          local media mirror (git-ignored, synced to R2)
 
 - Hero: dark gray background, **curved white bottom edge** (inline SVG wave), centered bio + social icons; background of cyan/magenta/yellow/black **diagonal hand-drawn crayon strokes** with translucent overprint where they cross (Canvas 2D `multiply` compositing in `js/hero-sketch.js`), keeping a grainy hand-drawn feel. Subpages use a shorter `.page-hero` band with a diagonal edge; it hosts the same sketch (`id="hero"`, `<canvas id="hero-canvas">`, `data-sketch-mode="static"` = no intro/re-sketch/double-click, `data-sketch-fit="cover"`), keeping breathing, parallax, re-ink trail, soft parting and halftone dots.
 - Hero background: faint halftone dot screen; dots near the cursor swell slightly and take a cyan/magenta/yellow ink each (WebGL composite shader; static CSS dots in the 2D fallback). Print-proof marks (crop marks, registration targets, slug line, color bar) sit in `.hero-marks`, ~30% white, hidden partly on mobile.
-- Navigation (top right): `Home` | `About Me` | `Projects` | `Blog` | `Contact`, thin white type, same order on every page.
+- Navigation (top right): `Home` | `About Me` | `Professional` | `Projects` | `Blog` | `Contact`, thin white type, same order on every page.
+- Professional (home, between About and Projects): one 16:9 card per game title from `data/professional.js` (key art or the trailer's YouTube thumbnail, status badge, year, focus line) linking to `professional/<slug>.html`. Each title page lists `:::contribution` blocks with category tags and a category filter. A tool shared by several titles is written once under the title where it was developed (`| also: other-slug`). Standout contributions may also appear in the project grid as normal `data/projects.js` entries with `from: "<title-slug>"` (badge) and `url` pointing at `professional/<slug>.html#<contribution-id>`.
 - Project grid: filters `ALL | COMPUTER GRAPHICS | TECH ART | GAMES | CREATIVE CODING`; 3 columns desktop / 2 tablet / 1 mobile; only the first 3 rows show until the "Load all" button is pressed (`COLLAPSED_ROWS` in `js/projects-grid.js`); light lavender-gray cards with coral titles; static cover that switches to a GIF/video preview on hover (lazy-loaded).
 - Category ids: `computer-graphics`, `tech-art`, `games`, `creative-coding`.
 
