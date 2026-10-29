@@ -768,6 +768,18 @@ body.lightbox-open {
   font-size: 0.85rem;
 }
 
+.contribution-more {
+  display: inline-block;
+  margin-top: 4px;
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.contribution-more:hover {
+  text-decoration: underline;
+}
+
 /* ---------- Post navigation ---------- */
 
 .post-nav {

@@ -57,15 +57,19 @@ def load_projects(path: Path) -> List[Dict]:
     return projects
 
 
-def render_shell(project: Dict, section: str = "projects") -> str:
+def render_shell(project: Dict, section: str = "projects", parent: Optional[Dict] = None) -> str:
     esc = lambda s: html.escape(s or "", quote=True)
     pro = section == "professional"
     if pro:
-        label = "Professional"
-        sub_text = " · ".join(s for s in (project.get("year"), project.get("status")) if s)
+        label = parent["title"] if parent else "Professional"
+        sub_text = project.get("subtitle") or " · ".join(s for s in (project.get("year"), project.get("status")) if s)
         nav_professional = '<a href="../index.html#professional" aria-current="page">Professional</a>'
         nav_projects = '<a href="../projects/index.html">Projects</a>'
-        back = '<a href="../index.html#professional">&larr; All professional work</a>'
+        back = (
+            f'<a href="{esc(parent["slug"])}.html">&larr; {esc(parent["title"])}</a>'
+            if parent
+            else '<a href="../index.html#professional">&larr; All professional work</a>'
+        )
     else:
         label = CATEGORY_LABELS.get(project.get("category", ""), project.get("category", ""))
         sub_text = project.get("subtitle") or ""
@@ -154,7 +158,9 @@ def main(argv: Optional[List[str]] = None) -> int:
     for section, data, out_dir in (("projects", DATA, OUT), ("professional", PRO_DATA, PRO_OUT)):
         if not data.is_file():
             continue
-        for p in load_projects(data):
+        entries = load_projects(data)
+        by_slug = {e.get("slug"): e for e in entries}
+        for p in entries:
             slug = p.get("slug", "")
             if p.get("url") or (args.only and slug != args.only):
                 continue
@@ -163,7 +169,8 @@ def main(argv: Optional[List[str]] = None) -> int:
             print(f"write  {section}/{slug}.html{note}")
             if not args.dry_run:
                 out_dir.mkdir(parents=True, exist_ok=True)
-                (out_dir / f"{slug}.html").write_text(render_shell(p, section), encoding="utf-8", newline="\n")
+                shell = render_shell(p, section, by_slug.get(p.get("parent")))
+                (out_dir / f"{slug}.html").write_text(shell, encoding="utf-8", newline="\n")
                 written += 1
     print(f"{written} shells written" if not args.dry_run else "Dry run complete. Nothing was written.")
     return 0

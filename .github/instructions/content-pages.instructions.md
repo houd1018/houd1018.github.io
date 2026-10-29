@@ -115,6 +115,7 @@ Raw HTML components from section 3 still work inside the Markdown (sanitized; `d
 - Titles live in `data/professional.js` (`slug, title, year, status, focus, trailer` YouTube id, optional `cover`), newest first; shells come from the same `scripts/build_project_pages.py`.
 - Same blocks as projects, plus one `:::contribution tag, tag | also: other-title-slug` block per contribution: `###` heading (becomes the anchor id), short problem / approach / impact text, media. Tags (`tool`, `shader`, `vfx`, `procedural`, `pipeline`, …) render as chips and drive the category filter (shown when there are ≥ 2 contributions and ≥ 2 tags).
 - A tool used by several titles is written once, under the title where it was developed; `also:` links the other titles.
+- Deep dives: `| more: <page>.html` adds a "Read more →" link. A deep-dive page is a `data/professional.js` entry with `parent: "<title-slug>"`, `title`, `subtitle` (not shown as a home card; its band shows the parent title and links back), content in `professional/content/<slug>.md`, slug `<title-slug>-<topic>`.
 - Grid highlight: a `data/projects.js` entry with `from: "<title-slug>"` gets a title badge; `url: "professional/<slug>.html#<contribution-id>"` (site-relative URLs open in the same tab).
 - Only use footage and facts that are already public or approved by the studio.
 

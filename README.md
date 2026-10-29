@@ -114,7 +114,7 @@ Open http://localhost:8000. Media loads from `cleaned_media/`; add `?media=remot
    ![Result](media:professional/battlefield-6/veg.mp4#loop)
    :::
    ```
-   Tags (`tool`, `shader`, `vfx`, `procedural`, `pipeline`, …) become the filter chips on the page. Write a shared tool once, under the title where it was developed, and list the other titles after `also:`.
+   Tags (`tool`, `shader`, `vfx`, `procedural`, `pipeline`, …) become the filter chips on the page. Write a shared tool once, under the title where it was developed, and list the other titles after `also:`. Add `| more: <page>.html` for a "Read more →" link to a deep-dive page: register it in `data/professional.js` with `parent: "<title-slug>"` (see `battlefield-2042-war-machine-cosmetics`).
 3. Run `python scripts/build_project_pages.py --only <slug>`.
 4. Optional: to feature a contribution in the project grid, add a normal entry to `data/projects.js` with `from: "<title-slug>"` (shows a badge) and `url: "professional/<slug>.html#<contribution-id>"` (the id is the contribution heading in kebab-case).
 

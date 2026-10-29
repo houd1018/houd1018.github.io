@@ -58,7 +58,7 @@
     var grid = doc.querySelector('[data-professional-grid]');
     if (!grid) return;
     (global.PROFESSIONAL || []).forEach(function (t) {
-      grid.appendChild(renderCard(t));
+      if (!t.parent) grid.appendChild(renderCard(t));
     });
   }
 

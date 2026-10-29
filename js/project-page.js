@@ -271,17 +271,20 @@
     return slug;
   }
 
-  // `:::contribution tool, procedural | also: battlefield-2042` → a row tagged with categories,
-  // optionally noting the other titles that use it.
+  // `:::contribution tool, procedural | also: battlefield-2042 | more: deep-dive.html` → a row tagged with
+  // categories, optionally noting the other titles that use it and linking to a deep-dive page.
   function layoutContribution(block, index) {
     var parts = (block.getAttribute('data-arg') || '').split('|');
     var tags = parts[0].split(',').map(function (s) {
       return s.trim().toLowerCase();
     }).filter(Boolean);
     var also = [];
+    var more = '';
     parts.slice(1).forEach(function (part) {
       var m = /^\s*also\s*:\s*(.+)$/i.exec(part);
       if (m) also = m[1].split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+      var r = /^\s*more\s*:\s*(\S+)\s*$/i.exec(part);
+      if (r && !/^\s*(?:javascript|data|vbscript):/i.test(r[1])) more = r[1];
     });
 
     var item = el('article', 'contribution');
@@ -316,6 +319,14 @@
     }
     if (heading && heading.parentNode === text) heading.insertAdjacentElement('afterend', badges);
     else text.insertBefore(badges, text.firstChild);
+    if (more) {
+      var link = el('a', 'contribution-more');
+      link.href = more;
+      link.textContent = 'Read more \u2192';
+      var p = el('p');
+      p.appendChild(link);
+      text.appendChild(p);
+    }
   }
 
   // Category chips above the contributions; filtering keeps the remaining rows alternating.

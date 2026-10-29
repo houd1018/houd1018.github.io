@@ -17,7 +17,7 @@ Trailer: [Event trailer on YouTube](https://www.youtube.com/watch?v=8UnuloqTboY)
 
 ## Contributions
 
-:::contribution shader, vfx
+:::contribution shader, vfx | more: battlefield-2042-war-machine-cosmetics.html
 ### Event Cosmetics: Shaders & VFX
 Shaders and visual effects for the event's cosmetic items.
 :::
