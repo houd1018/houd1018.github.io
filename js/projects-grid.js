@@ -5,8 +5,12 @@
   var doc = global.document;
   var FILTERS = [
     { id: 'all', label: 'All' },
+    { id: 'shaders', label: 'Shaders' },
+    { id: 'vfx', label: 'VFX' },
+    { id: 'tools', label: 'Tools' },
+    { id: 'procedural', label: 'Procedural' },
+    { id: 'environment', label: 'Environment' },
     { id: 'computer-graphics', label: 'Computer Graphics' },
-    { id: 'tech-art', label: 'Tech Art' },
     { id: 'games', label: 'Games' },
     { id: 'creative-coding', label: 'Creative Coding' },
   ];
@@ -124,7 +128,7 @@
     function matchingIndexes() {
       var out = [];
       projects.forEach(function (p, i) {
-        if (active === 'all' || p.category === active) out.push(i);
+        if (active === 'all' || (p.categories || []).indexOf(active) >= 0) out.push(i);
       });
       return out;
     }
@@ -231,6 +235,10 @@
       if (!filtersEl) return;
       filtersEl.textContent = '';
       FILTERS.forEach(function (f) {
+        var used = f.id === 'all' || projects.some(function (p) {
+          return (p.categories || []).indexOf(f.id) >= 0;
+        });
+        if (!used) return;
         var btn = el('button', 'filter-btn', f.label);
         btn.type = 'button';
         btn.setAttribute('aria-pressed', String(f.id === active));

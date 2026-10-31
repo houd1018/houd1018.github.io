@@ -1,5 +1,5 @@
 ---
-applyTo: "projects/**,professional/**,blog/**,data/**"
+applyTo: "projects/**,blog/**,data/**"
 description: "Layout and media rules for project detail pages, blog posts, and data indexes"
 ---
 
@@ -16,7 +16,7 @@ window.PROJECTS = [
   {
     slug: 'interactive-sand-desert-scene',   // lowercase kebab-case, unique, maps to projects/<slug>.html
     title: 'Interactive Sand – Stylized Desert Scene',
-    category: 'tech-art',                    // computer-graphics | tech-art | games | creative-coding
+    categories: ['shaders', 'environment'],  // first = primary label; ids below
     subtitle: 'URP / HLSL / 3D Environment', // tech stack line shown on the card
     date: '2024-04-11',                      // ISO date
     cover: '2024/04/Sand.gif',               // media library path (card cover)
@@ -24,12 +24,37 @@ window.PROJECTS = [
     video: 'https://www.youtube.com/watch?v=XXXX', // optional: main video
     url: 'https://example.com/',             // optional: external project, card links here (no detail page)
     listed: false,                           // optional: has a detail page but is hidden from the grid
+    from: 'battlefield-2042',                // optional: made for a professional title (badge on the card)
   },
 ];
 ```
 
+- Category ids (also the grid filters, in this order): `shaders`, `vfx`, `tools`, `procedural`, `environment`, `computer-graphics`, `games`, `creative-coding`. Give each project 1–3; filters with no listed project are hidden.
 - **Array order is the display order** of the grid (curated). New projects go at the top unless the user says otherwise.
 - `listed: false` entries are sub-pages (e.g. individual game-jam / BVW projects) linked from other project pages.
+
+### `data/professional.js`
+
+Game titles for the home Professional section (newest first). There are no per-title pages: a card opens a modal with the trailer and the contribution list.
+
+```js
+{
+  slug: 'battlefield-2042', title: 'Battlefield 2042', year: '2021', status: 'Shipped',
+  focus: 'War Machine event · Cosmetic shaders · VFX',      // one line on the card
+  cover: 'professional/battlefield-2042/cover.jpg',            // key art on R2 (no YouTube thumbnails)
+  trailer: { video: 'professional/battlefield-2042/trailer.mp4', youtube: 'ID', bilibili: 'BV…' },
+  contributions: [
+    { title: 'War Machine Cosmetics', tags: ['shaders', 'vfx'], summary: '…', project: 'battlefield-2042-war-machine-cosmetics' },
+    { title: 'Maya Renaming Tool', tags: ['tools'], summary: '…' },
+  ],
+}
+```
+
+- Trailer priority: `video` (self-hosted on R2, works everywhere incl. mainland China) → YouTube if reachable (probed) → Bilibili. Players load only after the viewer presses play.
+- `tags` use the project category ids. A contribution with `project` links to `projects/<slug>.html`; that project is a normal `data/projects.js` entry with `from: '<title-slug>'` so it also shows in the grid.
+- A tool shared by several titles is listed under the title where it was developed.
+- Deep links: `index.html#title-<slug>` opens a title's modal.
+- Only use footage and facts that are already public or approved by the studio.
 
 ### `data/blog.js`
 
@@ -55,7 +80,7 @@ window.BLOG_POSTS = [
 Each project has two files:
 
 - `projects/content/<slug>.md` — **the content you edit**: Markdown plus `:::` layout blocks.
-- `projects/<slug>.html` — a generated shell (header, sketch band with category/title/subtitle from `data/projects.js`, empty `<article id="project-body">`). Never hand-edit it; run `python scripts/build_project_pages.py [--only <slug>]` after adding a project or changing its title/subtitle/category.
+- `projects/<slug>.html` — a generated shell (header, sketch band with category/title/subtitle from `data/projects.js`, empty `<article id="project-body">`). Never hand-edit it; run `python scripts/build_project_pages.py [--only <slug>]` after adding a project or changing its title/subtitle/categories.
 
 `js/project-page.js` fetches the Markdown (needs HTTP, like blog posts), renders it with `marked`, sanitizes with DOMPurify, then lays out the blocks.
 
@@ -109,15 +134,6 @@ Text explaining the feature.
 | `![title](youtube:ID)`, `bilibili:BV…`, `vimeo:ID` | embedded player (youtube-nocookie) |
 
 Raw HTML components from section 3 still work inside the Markdown (sanitized; `data-media-*` attributes are hydrated).
-
-### Professional title pages `professional/content/<slug>.md`
-
-- Titles live in `data/professional.js` (`slug, title, year, status, focus, trailer` YouTube id, optional `cover`), newest first; shells come from the same `scripts/build_project_pages.py`.
-- Same blocks as projects, plus one `:::contribution tag, tag | also: other-title-slug` block per contribution: `###` heading (becomes the anchor id), short problem / approach / impact text, media. Tags (`tool`, `shader`, `vfx`, `procedural`, `pipeline`, …) render as chips and drive the category filter (shown when there are ≥ 2 contributions and ≥ 2 tags).
-- A tool used by several titles is written once, under the title where it was developed; `also:` links the other titles.
-- Deep dives: `| more: <page>.html` adds a "Read more →" link. A deep-dive page is a `data/professional.js` entry with `parent: "<title-slug>"`, `title`, `subtitle` (not shown as a home card; its band shows the parent title and links back), content in `professional/content/<slug>.md`, slug `<title-slug>-<topic>`.
-- Grid highlight: a `data/projects.js` entry with `from: "<title-slug>"` gets a title badge; `url: "professional/<slug>.html#<contribution-id>"` (site-relative URLs open in the same tab).
-- Only use footage and facts that are already public or approved by the studio.
 
 ## 3. HTML components (blog posts, raw HTML in Markdown)
 

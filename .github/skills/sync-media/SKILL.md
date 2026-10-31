@@ -14,7 +14,7 @@ Media never goes into Git. It lives in `cleaned_media/` locally (git-ignored) an
 | R2 bucket | `houd1018-media` |
 | rclone remote | `r2` (configured by the user with their own API token; never ask for or print keys) |
 | Public base URL | `https://pub-af66391f274d47529898def605b4df9a.r2.dev/` (`MEDIA_BASE_URL_REMOTE` in `config.js`) |
-| Library layout | `YYYY/MM/<file>` (WordPress), `blog/pic/<file>` (old blog), `projects/<slug>/<file>`, `blog/<slug>/<file>` |
+| Library layout | `YYYY/MM/<file>` (WordPress), `blog/pic/<file>` (old blog), `projects/<slug>/<file>`, `blog/<slug>/<file>`, `professional/<title-slug>/<file>` (key art, trailers) |
 
 ## A. Add new media (most common)
 

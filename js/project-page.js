@@ -255,129 +255,6 @@
 
   var tabGroupCount = 0;
 
-  var TAG_LABELS = { vfx: 'VFX', hda: 'HDA', ui: 'UI' };
-
-  function tagLabel(tag) {
-    return TAG_LABELS[tag] || tag.charAt(0).toUpperCase() + tag.slice(1);
-  }
-
-  function slugify(text) {
-    return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'item';
-  }
-
-  function titleName(slug) {
-    var titles = global.PROFESSIONAL || [];
-    for (var i = 0; i < titles.length; i++) if (titles[i].slug === slug) return titles[i].title;
-    return slug;
-  }
-
-  // `:::contribution tool, procedural | also: battlefield-2042 | more: deep-dive.html` → a row tagged with
-  // categories, optionally noting the other titles that use it and linking to a deep-dive page.
-  function layoutContribution(block, index) {
-    var parts = (block.getAttribute('data-arg') || '').split('|');
-    var tags = parts[0].split(',').map(function (s) {
-      return s.trim().toLowerCase();
-    }).filter(Boolean);
-    var also = [];
-    var more = '';
-    parts.slice(1).forEach(function (part) {
-      var m = /^\s*also\s*:\s*(.+)$/i.exec(part);
-      if (m) also = m[1].split(',').map(function (s) { return s.trim(); }).filter(Boolean);
-      var r = /^\s*more\s*:\s*(\S+)\s*$/i.exec(part);
-      if (r && !/^\s*(?:javascript|data|vbscript):/i.test(r[1])) more = r[1];
-    });
-
-    var item = el('article', 'contribution');
-    item.setAttribute('data-tags', tags.join(' '));
-    var heading = block.querySelector('h2, h3, h4');
-    if (heading) {
-      var id = slugify(heading.textContent);
-      while (doc.getElementById(id)) id += '-' + (++tabGroupCount);
-      item.id = id;
-    }
-    block.parentNode.insertBefore(item, block);
-    item.appendChild(block);
-    layoutRow(block, index);
-
-    var text = item.querySelector('.project-row-text');
-    var badges = el('div', 'contribution-tags');
-    tags.forEach(function (tag) {
-      badges.appendChild(el('span', 'contribution-tag'));
-      badges.lastChild.textContent = tagLabel(tag);
-    });
-    if (also.length) {
-      var note = el('span', 'contribution-also');
-      note.appendChild(doc.createTextNode('Also used in '));
-      also.forEach(function (slug, i) {
-        if (i) note.appendChild(doc.createTextNode(', '));
-        var a = el('a');
-        a.href = slug + '.html';
-        a.textContent = titleName(slug);
-        note.appendChild(a);
-      });
-      badges.appendChild(note);
-    }
-    if (heading && heading.parentNode === text) heading.insertAdjacentElement('afterend', badges);
-    else text.insertBefore(badges, text.firstChild);
-    if (more) {
-      var link = el('a', 'contribution-more');
-      link.href = more;
-      link.textContent = 'Read more \u2192';
-      var p = el('p');
-      p.appendChild(link);
-      text.appendChild(p);
-    }
-  }
-
-  // Category chips above the contributions; filtering keeps the remaining rows alternating.
-  function addContributionFilter(root) {
-    var items = Array.prototype.slice.call(root.querySelectorAll('.contribution'));
-    var counts = {};
-    var order = [];
-    items.forEach(function (item) {
-      item.getAttribute('data-tags').split(' ').filter(Boolean).forEach(function (tag) {
-        if (!counts[tag]) order.push(tag);
-        counts[tag] = (counts[tag] || 0) + 1;
-      });
-    });
-    if (items.length < 2 || order.length < 2) return;
-
-    var bar = el('div', 'filters contribution-filters');
-    bar.setAttribute('role', 'group');
-    bar.setAttribute('aria-label', 'Filter contributions by category');
-    var active = null;
-
-    function apply() {
-      var shown = 0;
-      items.forEach(function (item) {
-        var match = !active || (' ' + item.getAttribute('data-tags') + ' ').indexOf(' ' + active + ' ') >= 0;
-        item.hidden = !match;
-        if (match) {
-          var row = item.querySelector('.project-row');
-          if (row) row.classList.toggle('project-row--reverse', shown % 2 === 1);
-          shown++;
-        }
-      });
-      Array.prototype.forEach.call(bar.children, function (btn) {
-        btn.setAttribute('aria-pressed', String((btn.getAttribute('data-tag') || null) === active));
-      });
-    }
-
-    [null].concat(order).forEach(function (tag) {
-      var btn = el('button', 'filter-btn');
-      btn.type = 'button';
-      btn.textContent = (tag ? tagLabel(tag) : 'All') + ' (' + (tag ? counts[tag] : items.length) + ')';
-      if (tag) btn.setAttribute('data-tag', tag);
-      btn.addEventListener('click', function () {
-        active = tag;
-        apply();
-      });
-      bar.appendChild(btn);
-    });
-    items[0].parentNode.insertBefore(bar, items[0]);
-    apply();
-  }
-
   function layoutTabs(block) {
     var group = el('div', 'tabs');
     group.setAttribute('data-tabs', '');
@@ -413,7 +290,7 @@
     // Rows alternate sides in document order within each parent.
     var counters = new Map();
     var orderIndex = new Map();
-    Array.prototype.slice.call(root.querySelectorAll('[data-block="row"], [data-block="contribution"]')).forEach(function (row) {
+    Array.prototype.slice.call(root.querySelectorAll('[data-block="row"]')).forEach(function (row) {
       var c = counters.get(row.parentNode) || 0;
       orderIndex.set(row, c);
       counters.set(row.parentNode, c + 1);
@@ -422,7 +299,6 @@
     blocks.forEach(function (block) {
       var name = block.getAttribute('data-block');
       if (name === 'row') layoutRow(block, orderIndex.get(block) || 0);
-      else if (name === 'contribution') layoutContribution(block, orderIndex.get(block) || 0);
       else if (name === 'gallery') layoutGallery(block);
       else if (name === 'cards') layoutCards(block);
       else if (name === 'tabs') layoutTabs(block);
@@ -442,8 +318,6 @@
       if (meta) intro.appendChild(meta);
       if (!overview || !meta) intro.classList.add('project-intro--single');
     }
-
-    addContributionFilter(root);
 
     root.querySelectorAll('video[autoplay]').forEach(function (v) {
       v.muted = true;

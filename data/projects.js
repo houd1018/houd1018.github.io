@@ -1,10 +1,20 @@
 // Project index — single source of truth. Array order = display order in the grid.
+// categories: first entry is the primary label; ids are listed in js/projects-grid.js FILTERS.
 // Entries with listed: false have detail pages but are hidden from the grid.
+// from: "<professional title slug>" marks work made for a shipped game (badge on the card).
 window.PROJECTS = [
+  {
+    slug: "battlefield-2042-war-machine-cosmetics",
+    title: "War Machine Cosmetics",
+    categories: ["shaders", "vfx"],
+    subtitle: "Battlefield 2042 · Cosmetic shaders & VFX",
+    cover: "professional/battlefield-2042/cover.jpg",
+    from: "battlefield-2042",
+  },
   {
     slug: "software-rasterizer-pathtracer-meshedit-animations",
     title: "Software Rasterizer & Pathtracer & MeshEdit & Animations",
-    category: "computer-graphics",
+    categories: ["computer-graphics"],
     subtitle: "CMU 15-462 Computer Graphics [C++ | CG algorithms]",
     date: "2024-03-14",
     cover: "2024/03/cow.png",
@@ -12,7 +22,7 @@ window.PROJECTS = [
   {
     slug: "procedural-modeling-practice",
     title: "Procedural Content Generation: Houdini Practice",
-    category: "tech-art",
+    categories: ["procedural", "tools"],
     subtitle: "Houdini / Unreal / Blender",
     date: "2024-05-06",
     cover: "2024/09/Show_01.2520.jpeg",
@@ -20,7 +30,7 @@ window.PROJECTS = [
   {
     slug: "rifts-shadows-ascent",
     title: "Rifts: Shadow’s Ascent",
-    category: "games",
+    categories: ["games", "vfx", "procedural"],
     subtitle: "ETC Client Project | Tech Art | third-person action-adventure game",
     date: "2025-01-29",
     cover: "2025/01/tiuoWD.jpg",
@@ -28,7 +38,7 @@ window.PROJECTS = [
   {
     slug: "interactive-sand-desert-scene",
     title: "Interactive Sand – Stylized Desert Scene",
-    category: "tech-art",
+    categories: ["shaders", "environment"],
     subtitle: "URP / HLSL / 3D Environment",
     date: "2024-04-11",
     cover: "2024/04/Sand.gif",
@@ -36,7 +46,7 @@ window.PROJECTS = [
   {
     slug: "character-cel-shading-practice",
     title: "Character ToonShader",
-    category: "tech-art",
+    categories: ["shaders", "tools"],
     subtitle: "Unity Built-in / URP / HLSL / Houdini / Tool",
     date: "2024-04-02",
     cover: "2024/04/Toon.gif",
@@ -44,7 +54,7 @@ window.PROJECTS = [
   {
     slug: "shader-practice",
     title: "Shader & VFX Practice",
-    category: "tech-art",
+    categories: ["shaders", "vfx"],
     subtitle: "HLSL / Unity CG / Niagara / Particle System / VFX Graph / Substance Designer",
     date: "2024-03-17",
     cover: "2023/12/magicbox.gif",
@@ -52,7 +62,7 @@ window.PROJECTS = [
   {
     slug: "night-garage",
     title: "Night Garage",
-    category: "tech-art",
+    categories: ["environment", "shaders"],
     subtitle: "3D Environment practice [Substance Designer | UE5 Material Graph]",
     date: "2024-03-16",
     cover: "2024/05/UE_M-1.gif",
@@ -60,7 +70,7 @@ window.PROJECTS = [
   {
     slug: "building-virtual-worlds",
     title: "Building Virtual Worlds",
-    category: "games",
+    categories: ["games", "vfx"],
     subtitle: "Rapid prototyping course at Carnegie Mellon University – Entertainment Technology Center",
     date: "2024-03-15",
     cover: "2024/03/QQ图片20240315003905.jpg",
@@ -68,7 +78,7 @@ window.PROJECTS = [
   {
     slug: "weirdows-98",
     title: "Weirdows ’98",
-    category: "creative-coding",
+    categories: ["games", "creative-coding"],
     subtitle: "Alt.ctrl.GDC Finalist | BVW Round 4 [location based | gameplay | arduino]",
     date: "2023-12-14",
     cover: "2024/03/98-1.png",
@@ -76,7 +86,7 @@ window.PROJECTS = [
   {
     slug: "feathery-friends",
     title: "Feathery Friends",
-    category: "games",
+    categories: ["games"],
     subtitle: "ETC Client Project | Eagle Simulator | VR | Gameplay | Tech Art",
     cover: "2024/06/poster_front-1152x1536-1.jpeg",
     url: "https://projects.etc.cmu.edu/feathery-friends/",
@@ -84,7 +94,7 @@ window.PROJECTS = [
   {
     slug: "virtual-cinema-vr",
     title: "Virtual Cinema - VR",
-    category: "creative-coding",
+    categories: ["creative-coding"],
     subtitle: "VR cinema using Pico Unity SDK",
     date: "2023-07-27",
     cover: "2023/07/41479153_storage_emulated_0_Movies_ScreenRecordin_Moment.jpg",
@@ -92,7 +102,7 @@ window.PROJECTS = [
   {
     slug: "game-jams",
     title: "Game Jams",
-    category: "games",
+    categories: ["games"],
     subtitle: "Game Jams I participated",
     date: "2024-03-15",
     cover: "2024/03/unnamed.png",
@@ -100,7 +110,7 @@ window.PROJECTS = [
   {
     slug: "gan-on-traditional-chinese-painting",
     title: "GAN on Traditional Chinese Painting",
-    category: "creative-coding",
+    categories: ["creative-coding"],
     subtitle: "AI - style transferred & colored & generated traditional Chinese paintings using Generative Adversarial Networks",
     date: "2022-08-24",
     cover: "2022/08/未标题-1.jpg",
@@ -108,7 +118,7 @@ window.PROJECTS = [
   {
     slug: "gotcha-siamese-network-applied-on-pokemon-dataset",
     title: "Gotcha",
-    category: "creative-coding",
+    categories: ["creative-coding"],
     subtitle: "Siamese network applied on Pok´emon dataset for Few-shot classification",
     date: "2022-08-24",
     cover: "2022/08/微信截图_20220824184629.png",
@@ -116,21 +126,21 @@ window.PROJECTS = [
   {
     slug: "colorful-world",
     title: "Colorful World",
-    category: "games",
+    categories: ["games"],
     date: "2022-08-24",
     listed: false,
   },
   {
     slug: "the-way-3d-third-person-action-game",
     title: "The way: 3D third-person action game",
-    category: "games",
+    categories: ["games"],
     date: "2022-08-24",
     listed: false,
   },
   {
     slug: "easego-an-android-app-that-helps-seniors-show-the-health-code",
     title: "EaseGO: An android app that helps seniors show the health code",
-    category: "creative-coding",
+    categories: ["creative-coding"],
     date: "2022-08-24",
     cover: "2022/08/dazhou.io_2-656x1024.png",
     listed: false,
@@ -138,7 +148,7 @@ window.PROJECTS = [
   {
     slug: "isa-media",
     title: "ISA Media",
-    category: "creative-coding",
+    categories: ["creative-coding"],
     date: "2022-08-24",
     cover: "2022/08/mp.weixin.qq_.com_s_etyDHDkuJxI5d59QOLuseQ.png",
     listed: false,
@@ -146,28 +156,28 @@ window.PROJECTS = [
   {
     slug: "boomerang-jones",
     title: "Boomerang Jones",
-    category: "games",
+    categories: ["games"],
     date: "2022-10-21",
     listed: false,
   },
   {
     slug: "wizherkitten",
     title: "WizHerKitten",
-    category: "games",
+    categories: ["games"],
     date: "2023-07-27",
     listed: false,
   },
   {
     slug: "forest-claymation",
     title: "Forest Claymation",
-    category: "tech-art",
+    categories: ["environment"],
     date: "2023-07-27",
     listed: false,
   },
   {
     slug: "visual-effects",
     title: "VFX Reel",
-    category: "tech-art",
+    categories: ["vfx"],
     date: "2023-10-31",
     cover: "2023/11/Orb.gif",
     listed: false,
@@ -175,7 +185,7 @@ window.PROJECTS = [
   {
     slug: "sketch",
     title: "Sketch",
-    category: "games",
+    categories: ["shaders", "games"],
     date: "2023-10-31",
     cover: "2023/11/Renderer-Feature.jpg",
     listed: false,
@@ -183,7 +193,7 @@ window.PROJECTS = [
   {
     slug: "sarapist",
     title: "Sarapist",
-    category: "games",
+    categories: ["games", "vfx"],
     date: "2023-10-31",
     cover: "2023/11/candle.gif",
     listed: false,
@@ -191,7 +201,7 @@ window.PROJECTS = [
   {
     slug: "chrono-detective",
     title: "Chrono Detective",
-    category: "games",
+    categories: ["games", "vfx"],
     date: "2023-10-31",
     cover: "2023/11/Character-Trial.gif",
     listed: false,
@@ -199,7 +209,7 @@ window.PROJECTS = [
   {
     slug: "catnip-go-fast",
     title: "Catnip Go Fast",
-    category: "games",
+    categories: ["games", "vfx"],
     date: "2023-11-01",
     cover: "2023/11/Boost.gif",
     listed: false,
@@ -207,7 +217,7 @@ window.PROJECTS = [
   {
     slug: "shader-reel",
     title: "Shader Reel",
-    category: "tech-art",
+    categories: ["shaders"],
     date: "2023-12-14",
     cover: "2023/12/181824.jpg",
     listed: false,
