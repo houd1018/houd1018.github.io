@@ -46,7 +46,7 @@ window.PROJECTS = [
   {
     slug: "character-cel-shading-practice",
     title: "Character ToonShader",
-    categories: ["shaders", "tools"],
+    categories: ["shaders"],
     subtitle: "Unity Built-in / URP / HLSL / Houdini / Tool",
     date: "2024-04-02",
     cover: "2024/04/Toon.gif",
@@ -70,7 +70,7 @@ window.PROJECTS = [
   {
     slug: "building-virtual-worlds",
     title: "Building Virtual Worlds",
-    categories: ["games", "vfx"],
+    categories: ["games"],
     subtitle: "Rapid prototyping course at Carnegie Mellon University – Entertainment Technology Center",
     date: "2024-03-15",
     cover: "2024/03/QQ图片20240315003905.jpg",

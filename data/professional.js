@@ -1,5 +1,6 @@
 // Professional work — shipped / in-development game titles, newest first. Each card opens a detail panel
 // on the home page with the trailer and the contributions.
+// studio:  shown in the modal meta line.
 // cover:   key art in the media library (professional/<slug>/cover.jpg).
 // trailer: video = self-hosted file on R2 (plays everywhere, preferred); youtube / bilibili = embed ids.
 //          Without a video file, YouTube is used when reachable, otherwise Bilibili (e.g. in mainland China).
@@ -9,11 +10,15 @@ window.PROFESSIONAL = [
   {
     slug: "battlefield-6",
     title: "Battlefield 6",
+    studio: "EA Create / DICE",
     year: "2025",
     status: "Shipped",
     focus: "Tools · Procedural · Destruction pipeline",
     cover: "professional/battlefield-6/cover.jpg",
-    trailer: { youtube: "wFGEMfyAQtI" },
+    trailer: {
+      video: "professional/battlefield-6/YTDown.com_YouTube_Media_wFGEMfyAQtI_Battlefield-6-Official-Multiplayer-Gameplay-Trailer_003_1080p.mp4",
+      youtube: "wFGEMfyAQtI",
+    },
     contributions: [
       {
         title: "FBBreak",
@@ -35,11 +40,15 @@ window.PROFESSIONAL = [
   {
     slug: "battlefield-2042",
     title: "Battlefield 2042",
+    studio: "EA Create / DICE",
     year: "2021",
     status: "Shipped",
     focus: "War Machine event · Cosmetic shaders · VFX · Tools",
     cover: "professional/battlefield-2042/cover.jpg",
-    trailer: { youtube: "8UnuloqTboY" },
+    trailer: {
+      video: "professional/battlefield-2042/YTDown.com_YouTube_Media_8UnuloqTboY_Battlefield-2042-War-Machine-Event-Trailer_003_1080p.mp4",
+      youtube: "8UnuloqTboY",
+    },
     contributions: [
       {
         title: "War Machine Cosmetics",

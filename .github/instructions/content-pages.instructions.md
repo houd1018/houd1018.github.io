@@ -39,7 +39,8 @@ Game titles for the home Professional section (newest first). There are no per-t
 
 ```js
 {
-  slug: 'battlefield-2042', title: 'Battlefield 2042', year: '2021', status: 'Shipped',
+  slug: 'battlefield-2042', title: 'Battlefield 2042', studio: 'EA Create / DICE', year: '2021', status: 'Shipped',
+  role: 'Technical Artist',                                     // optional, bold line under the meta line
   focus: 'War Machine event · Cosmetic shaders · VFX',      // one line on the card
   cover: 'professional/battlefield-2042/cover.jpg',            // key art on R2 (no YouTube thumbnails)
   trailer: { video: 'professional/battlefield-2042/trailer.mp4', youtube: 'ID', bilibili: 'BV…' },

@@ -121,10 +121,16 @@
   // ---------------------------------------------------------------- modal
 
   var dialog = null;
-  var body = null;
+  var panel = null;
+  var current = -1;
+
+  function titles() {
+    return global.PROFESSIONAL || [];
+  }
 
   function cleanup() {
-    body.textContent = '';
+    if (panel) panel.textContent = '';
+    current = -1;
     doc.documentElement.classList.remove('modal-open');
     if (global.location.hash.indexOf(HASH_PREFIX) === 0) {
       global.history.replaceState(null, '', global.location.pathname + global.location.search);
@@ -138,25 +144,54 @@
     dialog.close();
   }
 
+  function step(delta) {
+    var list = titles();
+    if (list.length < 2 || current < 0) return;
+    open(list[(current + delta + list.length) % list.length]);
+  }
+
+  function iconButton(className, label, html, onClick) {
+    var btn = el('button', className);
+    btn.type = 'button';
+    btn.setAttribute('aria-label', label);
+    btn.innerHTML = html;
+    btn.addEventListener('click', onClick);
+    return btn;
+  }
+
+  var ARROW_LEFT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>';
+  var ARROW_RIGHT = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+  var CROSS = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+  var COPY = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></svg>';
+
   function ensureDialog() {
     if (dialog) return dialog;
+    // The dialog covers the viewport; the visible card is .title-modal-panel inside it.
     dialog = el('dialog', 'title-modal');
     dialog.setAttribute('aria-labelledby', 'title-modal-heading');
-    var close = el('button', 'title-modal-close');
-    close.type = 'button';
-    close.setAttribute('aria-label', 'Close');
-    close.innerHTML = '&times;';
-    close.addEventListener('click', closeModal);
-    body = el('div', 'title-modal-body');
-    dialog.appendChild(close);
-    dialog.appendChild(body);
-    // A click on the backdrop lands on the <dialog> itself.
+    panel = el('div', 'title-modal-panel');
+    dialog.appendChild(panel);
+    dialog.appendChild(iconButton('title-modal-close', 'Close', CROSS, closeModal));
+    if (titles().length > 1) {
+      dialog.appendChild(iconButton('title-modal-nav title-modal-nav--prev', 'Previous title', ARROW_LEFT, function () {
+        step(-1);
+      }));
+      dialog.appendChild(iconButton('title-modal-nav title-modal-nav--next', 'Next title', ARROW_RIGHT, function () {
+        step(1);
+      }));
+    }
+    // Clicks outside the panel land on the full-screen <dialog> itself.
     dialog.addEventListener('click', function (e) {
       if (e.target === dialog) closeModal();
     });
     dialog.addEventListener('cancel', function (e) {
       e.preventDefault();
       closeModal();
+    });
+    dialog.addEventListener('keydown', function (e) {
+      if (/^(INPUT|TEXTAREA|VIDEO)$/.test(e.target.tagName)) return;
+      if (e.key === 'ArrowLeft') step(-1);
+      else if (e.key === 'ArrowRight') step(1);
     });
     dialog.addEventListener('close', cleanup);
     doc.body.appendChild(dialog);
@@ -179,27 +214,54 @@
     return item;
   }
 
+  function copyLink(btn, t) {
+    var url = global.location.href.split('#')[0] + HASH_PREFIX + t.slug;
+    var done = function () {
+      btn.classList.add('is-copied');
+      btn.setAttribute('aria-label', 'Link copied');
+      global.setTimeout(function () {
+        btn.classList.remove('is-copied');
+        btn.setAttribute('aria-label', 'Copy link');
+      }, 1600);
+    };
+    if (global.navigator.clipboard) global.navigator.clipboard.writeText(url).then(done, function () {});
+  }
+
   function open(t) {
     ensureDialog();
-    body.textContent = '';
-    body.appendChild(renderTrailer(t));
+    current = titles().indexOf(t);
+    panel.textContent = '';
+    panel.appendChild(renderTrailer(t));
 
+    // The scroller is absolutely positioned so the row height follows the 16:9 video, not the text.
     var info = el('div', 'title-modal-info');
-    info.appendChild(el('p', 'title-modal-meta', [t.year, t.status].filter(Boolean).join(' \u00b7 ')));
+    var scroll = el('div', 'title-modal-scroll');
+    info.appendChild(scroll);
+    var head = el('div', 'title-modal-head');
     var heading = el('h2', 'title-modal-title', t.title);
     heading.id = 'title-modal-heading';
-    info.appendChild(heading);
-    if (t.focus) info.appendChild(el('p', 'title-modal-focus', t.focus));
+    head.appendChild(heading);
+    var copy = iconButton('title-modal-copy', 'Copy link', COPY, function () {
+      copyLink(copy, t);
+    });
+    head.appendChild(copy);
+    scroll.appendChild(head);
+
+    var meta = [t.year && t.year + ' \u2013 ' + (t.status || 'Release'), t.studio].filter(Boolean).join(' \u00b7 ');
+    if (meta) scroll.appendChild(el('p', 'title-modal-meta', meta));
+    if (t.role) scroll.appendChild(el('p', 'title-modal-role', t.role));
+    if (t.focus) scroll.appendChild(el('p', 'title-modal-focus', t.focus));
+
     var contribs = t.contributions || [];
     if (contribs.length) {
-      info.appendChild(el('h3', 'title-modal-subhead', 'My contributions'));
+      scroll.appendChild(el('h3', 'title-modal-subhead', 'My contributions'));
       var list = el('div', 'title-contribs');
       contribs.forEach(function (c) {
         list.appendChild(renderContribution(c));
       });
-      info.appendChild(list);
+      scroll.appendChild(list);
     }
-    body.appendChild(info);
+    panel.appendChild(info);
 
     doc.documentElement.classList.add('modal-open');
     if (!dialog.open) dialog.showModal();
@@ -229,7 +291,6 @@
       thumb.appendChild(img);
     }
     if (t.status) thumb.appendChild(el('span', 'title-card-status', t.status));
-    thumb.appendChild(el('span', 'title-card-play'));
     card.appendChild(thumb);
 
     var info = el('div', 'title-card-info');
