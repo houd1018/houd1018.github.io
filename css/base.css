@@ -12,8 +12,22 @@
 
   --text: #222222;
   --text-muted: #6b6b76;
+  --text-soft: #4a4a55;
+  --heading: #3b3b3b;
   --border: #e4e2ec;
   --bg: #ffffff;
+  --surface: #ffffff;
+  --accent-hover: #c4525b;
+  --code-inline: #a33f48;
+  --quote-text: #3a3a44;
+  --filter-text: #4a4a4a;
+  --filter-active-bg: #2f2f2f;
+  --filter-active-text: #ffffff;
+  --tab-bg: #f0f0f0;
+  --tab-hover: #e4e4e4;
+  --tab-active: #444444;
+  --icon: #4a4a4a;
+  --hover-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
 
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, "PingFang SC",
     "Microsoft YaHei", sans-serif;
@@ -23,6 +37,63 @@
   --shadow: 0 6px 24px rgba(30, 20, 60, 0.08);
   --container: 1180px;
   --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+
+  color-scheme: light dark;
+}
+
+/* Dark palette: follows the system unless config.js set data-theme from the visitor's choice. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --card-bg: #212228;
+    --accent-dark: #f0959b;
+    --text: #e3e3e8;
+    --text-muted: #9c9ca8;
+    --text-soft: #b8b8c2;
+    --heading: #ececf1;
+    --border: #30313a;
+    --bg: #15161a;
+    --surface: #2a2b32;
+    --code-inline: #f2a0a6;
+    --quote-text: #cfcfd8;
+    --filter-text: #c9c9d2;
+    --filter-active-bg: #ececf1;
+    --filter-active-text: #15161a;
+    --tab-bg: #212228;
+    --tab-hover: #2c2d35;
+    --tab-active: #4a4b55;
+    --icon: #d0d0d8;
+    --shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+    --hover-shadow: 0 12px 24px rgba(0, 0, 0, 0.45);
+  }
+}
+
+:root[data-theme="dark"] {
+  --card-bg: #212228;
+  --accent-dark: #f0959b;
+  --text: #e3e3e8;
+  --text-muted: #9c9ca8;
+  --text-soft: #b8b8c2;
+  --heading: #ececf1;
+  --border: #30313a;
+  --bg: #15161a;
+  --surface: #2a2b32;
+  --code-inline: #f2a0a6;
+  --quote-text: #cfcfd8;
+  --filter-text: #c9c9d2;
+  --filter-active-bg: #ececf1;
+  --filter-active-text: #15161a;
+  --tab-bg: #212228;
+  --tab-hover: #2c2d35;
+  --tab-active: #4a4b55;
+  --icon: #d0d0d8;
+  --shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+  --hover-shadow: 0 12px 24px rgba(0, 0, 0, 0.45);
+
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
 }
 
 *,
@@ -76,7 +147,7 @@ a {
   top: -60px;
   z-index: 100;
   padding: 8px 14px;
-  background: #fff;
+  background: var(--bg);
   color: var(--text);
   border-radius: 6px;
 }
@@ -108,6 +179,7 @@ a {
 }
 
 .site-nav {
+  margin-left: auto;
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
@@ -129,6 +201,38 @@ a {
   text-decoration: underline;
   text-underline-offset: 6px;
   text-decoration-thickness: 1px;
+}
+
+/* Light/dark switch, injected into .site-header by config.js. */
+.theme-toggle {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 50%;
+  background: transparent;
+  color: #fff;
+  opacity: 0.85;
+  cursor: pointer;
+  transition: opacity 0.2s var(--ease), background-color 0.2s var(--ease);
+}
+
+.theme-toggle:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.theme-toggle svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 /* ---------- Hero sketch canvas (home hero and subpage bands) ---------- */
@@ -227,7 +331,7 @@ a {
   border: 0;
   border-radius: 999px;
   background: none;
-  color: #4a4a4a;
+  color: var(--filter-text);
   font: inherit;
   font-size: 0.82rem;
   font-weight: 600;
@@ -242,8 +346,8 @@ a {
 }
 
 .filter-btn[aria-pressed="true"] {
-  background: #2f2f2f;
-  color: #fff;
+  background: var(--filter-active-bg);
+  color: var(--filter-active-text);
 }
 
 .btn {
@@ -258,7 +362,7 @@ a {
 }
 
 .btn:hover {
-  background: var(--accent-dark);
+  background: var(--accent-hover);
 }
 
 .tag-list {
@@ -273,7 +377,7 @@ a {
 .tag-list li {
   padding: 1px 9px;
   border-radius: 999px;
-  background: #fff;
+  background: var(--surface);
   border: 1px solid var(--border);
   color: var(--text-muted);
   font-size: 0.75rem;

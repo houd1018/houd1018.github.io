@@ -24,6 +24,7 @@ Full rules: [.github/copilot-instructions.md](.github/copilot-instructions.md). 
 ## Visual system
 
 - Hero `#4a4a4a`, curved white bottom edge, centered bio + social icons, CMYK (cyan/magenta/yellow/black) diagonal hand-drawn strokes with translucent overprint.
+- Light/dark mode follows the system; the header toggle (from `config.js`) overrides via `localStorage.theme` + `<html data-theme>`. Use colour tokens from `css/base.css`, never hard-coded page colours.
 - Cards `#f5f4f9`, titles `#df6c74`. Nav: `Home | About Me | Professional | Projects | Blog | Contact`.
 - Professional work: `data/professional.js` (titles with `cover`, `trailer {video|youtube|bilibili}`, `contributions[]`); a home card opens a modal with the trailer and contributions; contributions with `project` link to a project page that is also in the grid (`from: "<title>"` badge). No per-title pages.
 - Filters: `ALL | SHADERS | VFX | TOOLS | PROCEDURAL | ENVIRONMENT | COMPUTER GRAPHICS | GAMES | CREATIVE CODING` (projects use a `categories` array).

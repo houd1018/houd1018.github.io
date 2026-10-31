@@ -91,7 +91,7 @@
   border-left: 4px solid var(--accent);
   border-radius: 0 var(--radius) var(--radius) 0;
   background: var(--card-bg);
-  color: #3a3a44;
+  color: var(--quote-text);
 }
 
 .prose blockquote > :last-child {
@@ -130,7 +130,7 @@
   padding: 0.12em 0.4em;
   border-radius: 4px;
   background: var(--card-bg);
-  color: #a33f48;
+  color: var(--code-inline);
 }
 
 .prose pre {
@@ -422,7 +422,7 @@ body.lightbox-open {
   display: -webkit-box;
   margin: 0;
   overflow: hidden;
-  color: #4a4a55;
+  color: var(--text-soft);
   font-size: 0.92rem;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
@@ -510,7 +510,7 @@ body.lightbox-open {
 .tabs-list {
   display: flex;
   flex-wrap: wrap;
-  background: #f0f0f0;
+  background: var(--tab-bg);
 }
 
 .tabs-list [role="tab"] {
@@ -519,7 +519,7 @@ body.lightbox-open {
   padding: 14px 16px;
   border: 0;
   background: none;
-  color: #3b3b3b;
+  color: var(--heading);
   font: inherit;
   font-size: 0.92rem;
   cursor: pointer;
@@ -527,11 +527,11 @@ body.lightbox-open {
 }
 
 .tabs-list [role="tab"]:hover {
-  background: #e4e4e4;
+  background: var(--tab-hover);
 }
 
 .tabs-list [role="tab"][aria-selected="true"] {
-  background: #444;
+  background: var(--tab-active);
   color: #fff;
 }
 
@@ -541,7 +541,7 @@ body.lightbox-open {
   bottom: -8px;
   left: 50%;
   border: 8px solid transparent;
-  border-top-color: #444;
+  border-top-color: var(--tab-active);
   border-bottom: 0;
   transform: translateX(-50%);
 }
