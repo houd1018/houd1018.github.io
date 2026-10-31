@@ -28,6 +28,7 @@
   --tab-active: #444444;
   --icon: #4a4a4a;
   --hover-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+  --hero-title-shadow: 0 8px 26px rgba(0, 0, 0, 0.55);
 
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, "PingFang SC",
     "Microsoft YaHei", sans-serif;
@@ -64,6 +65,8 @@
     --icon: #d0d0d8;
     --shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
     --hover-shadow: 0 12px 24px rgba(0, 0, 0, 0.45);
+    --hero-bg: #0c0c0f;
+    --hero-title-shadow: -2px 0 rgba(0, 174, 239, 0.55), 2px 0 rgba(236, 0, 140, 0.55), 0 8px 26px rgba(0, 0, 0, 0.6);
   }
 }
 
@@ -88,6 +91,8 @@
   --icon: #d0d0d8;
   --shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
   --hover-shadow: 0 12px 24px rgba(0, 0, 0, 0.45);
+  --hero-bg: #0c0c0f;
+  --hero-title-shadow: -2px 0 rgba(0, 174, 239, 0.55), 2px 0 rgba(236, 0, 140, 0.55), 0 8px 26px rgba(0, 0, 0, 0.6);
 
   color-scheme: dark;
 }

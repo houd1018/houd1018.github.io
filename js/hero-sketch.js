@@ -49,6 +49,14 @@
     { color: '#f3e500', alpha: 0.72, cx: 668, cy: 300, r: 175, depth: 0.75, phase: 4.6, delay: 0.6 },
   ];
 
+  // Dark mode (near-black hero): white instead of black ink, brighter C/M/Y. Same order as CLUSTERS.
+  var DARK_INKS = [
+    { color: '#ececf2', alpha: 0.55 },
+    { color: '#22c3ff', alpha: 0.86 },
+    { color: '#ff3aa6', alpha: 0.8 },
+    { color: '#fff545', alpha: 0.82 },
+  ];
+
   var TILT = -0.5;
   var LOOPS = 17;
   var SEGS_PER_LOOP = 32;
@@ -77,7 +85,7 @@
       pts.push({ x: x, y: y, ox: x, oy: y, vx: 0, vy: 0, z: Math.sin(angle), ink: 0, px: 0, py: 0 });
     }
     c.pts = pts;
-    c.rgb = hexToRgb(c.color);
+    c.light = { color: c.color, alpha: c.alpha };
     c.index = index;
     c.offsetX = 0;
     c.offsetY = 0;
@@ -86,6 +94,18 @@
   }
 
   CLUSTERS.forEach(buildCluster);
+
+  function applyPalette() {
+    var dark = global.SiteConfig && global.SiteConfig.getTheme && global.SiteConfig.getTheme() === 'dark';
+    CLUSTERS.forEach(function (c, i) {
+      var ink = dark ? DARK_INKS[i] : c.light;
+      c.color = ink.color;
+      c.alpha = ink.alpha;
+      c.rgb = hexToRgb(ink.color);
+    });
+  }
+
+  applyPalette();
 
   // ------------------------------------------------------------------ view & input
 
@@ -932,6 +952,15 @@
     resize();
     renderer.draw();
   });
+
+  function onThemeChange() {
+    applyPalette();
+    renderer.draw();
+  }
+  new MutationObserver(onThemeChange).observe(doc.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  var darkQuery = global.matchMedia && global.matchMedia('(prefers-color-scheme: dark)');
+  if (darkQuery && darkQuery.addEventListener) darkQuery.addEventListener('change', onThemeChange);
+  else if (darkQuery && darkQuery.addListener) darkQuery.addListener(onThemeChange);
 
   if (reduceMotion) return;
 
